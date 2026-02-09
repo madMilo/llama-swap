@@ -173,3 +173,12 @@ main {
   flex-direction: column;
   gap: 0.5rem;
 }
+
+.recommendations-table td {
+  white-space: normal;
+}
+
+.recommendations-mismatch {
+  color: #b45309;
+  font-weight: 600;
+}

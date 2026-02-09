@@ -33,6 +33,22 @@ type UIModel struct {
 	Aliases     []string
 }
 
+type UIRecommendationModel struct {
+	ID                 string
+	Name               string
+	FitPolicy          string
+	InitialVramMB      string
+	MeasuredVramMB     string
+	VramDeltaMB        string
+	InitialCpuMB       string
+	MeasuredCpuMB      string
+	CpuDeltaMB         string
+	HighlightVramDelta bool
+	HighlightCpuDelta  bool
+	Recommendation     string
+	RecommendationNote string
+}
+
 type UIRunningProcess struct {
 	Model string
 	Name  string
@@ -42,18 +58,20 @@ type UIRunningProcess struct {
 }
 
 type UIPageData struct {
-	NavItems            []UINavigationItem
-	VersionInfo         UIVersionInfo
-	Models              []UIModel
-	RunningProcesses    []UIRunningProcess
-	Logs                string
-	PlaygroundTab       string
-	ActivityMetrics     []UIActivityMetric
-	ActivityCapture     *UIActivityCapture
-	ActivityCaptureNote string
-	ProxyLogs           string
-	UpstreamLogs        string
-	LogViewerMode       string
+	NavItems             []UINavigationItem
+	VersionInfo          UIVersionInfo
+	Models               []UIModel
+	RunningProcesses     []UIRunningProcess
+	Logs                 string
+	PlaygroundTab        string
+	ActivityMetrics      []UIActivityMetric
+	ActivityCapture      *UIActivityCapture
+	ActivityCaptureNote  string
+	ProxyLogs            string
+	UpstreamLogs         string
+	LogViewerMode        string
+	RecommendationModels []UIRecommendationModel
+	RecommendationNotes  []string
 }
 
 func (pm *ProxyManager) uiIndexHandler(c *gin.Context) {
@@ -98,6 +116,12 @@ func (pm *ProxyManager) uiPlaygroundPageHandler(c *gin.Context) {
 	data.PlaygroundTab = tab
 	data.Models = pm.uiModelsList()
 	pm.renderUITemplate(c, "pages/playground", data)
+}
+
+func (pm *ProxyManager) uiRecommendationsPageHandler(c *gin.Context) {
+	data := pm.uiPageData("/ui/recommendations")
+	data.RecommendationModels, data.RecommendationNotes = pm.uiRecommendationData()
+	pm.renderUITemplate(c, "pages/recommendations", data)
 }
 
 func (pm *ProxyManager) uiModelsPartialHandler(c *gin.Context) {
@@ -180,12 +204,19 @@ func (pm *ProxyManager) uiPlaygroundAudioPartialHandler(c *gin.Context) {
 	pm.renderUITemplate(c, "partials/playground_audio", data)
 }
 
+func (pm *ProxyManager) uiRecommendationsPartialHandler(c *gin.Context) {
+	data := pm.uiPageData("/ui/recommendations")
+	data.RecommendationModels, data.RecommendationNotes = pm.uiRecommendationData()
+	pm.renderUITemplate(c, "partials/recommendations", data)
+}
+
 func (pm *ProxyManager) uiPageData(activePath string) UIPageData {
 	return UIPageData{
 		NavItems: []UINavigationItem{
 			{Label: "Models", Path: "/ui/models", Active: activePath == "/ui/models"},
 			{Label: "Running", Path: "/ui/running", Active: activePath == "/ui/running"},
 			{Label: "Activity", Path: "/ui/activity", Active: activePath == "/ui/activity"},
+			{Label: "Recommendations", Path: "/ui/recommendations", Active: activePath == "/ui/recommendations"},
 			{Label: "Log Viewer", Path: "/ui/logviewer", Active: activePath == "/ui/logviewer"},
 			{Label: "Logs", Path: "/ui/logs", Active: activePath == "/ui/logs"},
 			{Label: "Playground", Path: "/ui/playground", Active: activePath == "/ui/playground"},
@@ -214,6 +245,113 @@ func uiLogViewerMode(mode string) string {
 	default:
 		return "proxy"
 	}
+}
+
+func formatMB(value uint64) string {
+	if value == 0 {
+		return "—"
+	}
+	return fmt.Sprintf("%d MB", value)
+}
+
+func formatDeltaMB(initial uint64, measured uint64) string {
+	if initial == 0 || measured == 0 {
+		return "—"
+	}
+	delta := int64(measured) - int64(initial)
+	return fmt.Sprintf("%+d MB", delta)
+}
+
+func recommendationForModel(fitPolicy string, initialCpuMB uint64, measuredCpuMB uint64) (string, string) {
+	if strings.EqualFold(fitPolicy, "spill") {
+		return "spill (configured)", ""
+	}
+	recommendation := "evict_to_fit (no --fit)"
+	if measuredCpuMB > 0 && measuredCpuMB > initialCpuMB {
+		return recommendation, "Spill recommended: observed host RAM usage exceeds hint."
+	}
+	if measuredCpuMB > 0 && initialCpuMB == 0 {
+		return recommendation, "Spill recommended: no host RAM hint set for measured usage."
+	}
+	return recommendation, ""
+}
+
+func (pm *ProxyManager) uiRecommendationData() ([]UIRecommendationModel, []string) {
+	modelIDs := make([]string, 0, len(pm.config.Models))
+	for modelID := range pm.config.Models {
+		modelIDs = append(modelIDs, modelID)
+	}
+	sort.Strings(modelIDs)
+
+	recommendations := make([]UIRecommendationModel, 0, len(modelIDs))
+	var totalMeasuredVram uint64
+	var totalMeasuredHost uint64
+	perGPUUsage := make(map[int]uint64)
+
+	for _, modelID := range modelIDs {
+		modelConfig := pm.config.Models[modelID]
+		var measuredVram uint64
+		var measuredCpu uint64
+		assignedGPU := -1
+		processGroup := pm.findGroupByModelName(modelID)
+		if processGroup != nil {
+			process := processGroup.processes[modelID]
+			if process != nil {
+				measuredVram = process.MeasuredVramMB()
+				measuredCpu = process.MeasuredCpuMB()
+				assignedGPU = process.AssignedGPU()
+			}
+		}
+
+		if measuredVram == 0 && measuredCpu == 0 {
+			continue
+		}
+
+		fitPolicy := strings.TrimSpace(modelConfig.FitPolicy)
+		recommendation, note := recommendationForModel(fitPolicy, modelConfig.InitialCpuMB, measuredCpu)
+
+		recommendations = append(recommendations, UIRecommendationModel{
+			ID:                 modelID,
+			Name:               modelConfig.Name,
+			FitPolicy:          fitPolicy,
+			InitialVramMB:      formatMB(modelConfig.InitialVramMB),
+			MeasuredVramMB:     formatMB(measuredVram),
+			VramDeltaMB:        formatDeltaMB(modelConfig.InitialVramMB, measuredVram),
+			InitialCpuMB:       formatMB(modelConfig.InitialCpuMB),
+			MeasuredCpuMB:      formatMB(measuredCpu),
+			CpuDeltaMB:         formatDeltaMB(modelConfig.InitialCpuMB, measuredCpu),
+			HighlightVramDelta: modelConfig.InitialVramMB > 0 && measuredVram > 0 && modelConfig.InitialVramMB != measuredVram,
+			HighlightCpuDelta:  modelConfig.InitialCpuMB > 0 && measuredCpu > 0 && modelConfig.InitialCpuMB != measuredCpu,
+			Recommendation:     recommendation,
+			RecommendationNote: note,
+		})
+
+		totalMeasuredVram += measuredVram
+		if !strings.EqualFold(fitPolicy, "spill") {
+			totalMeasuredHost += measuredCpu
+		}
+		if assignedGPU >= 0 && measuredVram > 0 {
+			perGPUUsage[assignedGPU] += measuredVram
+		}
+	}
+
+	notes := []string{}
+	if pm.config.HostRamCapMB > 0 && totalMeasuredHost > pm.config.HostRamCapMB {
+		notes = append(notes, fmt.Sprintf("Host RAM cap is %d MB, but measured host usage totals %d MB for non-spill models.", pm.config.HostRamCapMB, totalMeasuredHost))
+	}
+	if pm.config.GpuVramCapMB > 0 && totalMeasuredVram > pm.config.GpuVramCapMB {
+		notes = append(notes, fmt.Sprintf("GPU VRAM cap is %d MB, but measured VRAM usage totals %d MB.", pm.config.GpuVramCapMB, totalMeasuredVram))
+	}
+	for index, capMB := range pm.config.GpuVramCapsMB {
+		if capMB == 0 {
+			continue
+		}
+		if usage := perGPUUsage[index]; usage > capMB {
+			notes = append(notes, fmt.Sprintf("GPU %d VRAM cap is %d MB, but measured usage totals %d MB.", index, capMB, usage))
+		}
+	}
+
+	return recommendations, notes
 }
 
 type UIActivityMetric struct {
