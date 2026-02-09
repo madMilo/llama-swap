@@ -1,0 +1,25 @@
+extends ../layouts/base
+
+block title
+  | Log Viewer · Llama Swap
+
+block content
+  div.section-header
+    h1 Log Viewer
+    div.section-actions
+      if LogViewerMode == "panels"
+        a.topcoat-button.topcoat-button--cta[href="/ui/logviewer?view=panels"][data-htmz-get="/ui/partials/logviewer?view=panels"][data-htmz-target="#logviewer-content"] Panels
+      else
+        a.topcoat-button[href="/ui/logviewer?view=panels"][data-htmz-get="/ui/partials/logviewer?view=panels"][data-htmz-target="#logviewer-content"] Panels
+      if LogViewerMode == "proxy"
+        a.topcoat-button.topcoat-button--cta[href="/ui/logviewer?view=proxy"][data-htmz-get="/ui/partials/logviewer?view=proxy"][data-htmz-target="#logviewer-content"] Proxy
+      else
+        a.topcoat-button[href="/ui/logviewer?view=proxy"][data-htmz-get="/ui/partials/logviewer?view=proxy"][data-htmz-target="#logviewer-content"] Proxy
+      if LogViewerMode == "upstream"
+        a.topcoat-button.topcoat-button--cta[href="/ui/logviewer?view=upstream"][data-htmz-get="/ui/partials/logviewer?view=upstream"][data-htmz-target="#logviewer-content"] Upstream
+      else
+        a.topcoat-button[href="/ui/logviewer?view=upstream"][data-htmz-get="/ui/partials/logviewer?view=upstream"][data-htmz-target="#logviewer-content"] Upstream
+      a.topcoat-button[href="/ui/logviewer?view=#{$.LogViewerMode}"][data-htmz-get="/ui/partials/logviewer?view=#{$.LogViewerMode}"][data-htmz-target="#logviewer-content"] Refresh logs
+  p.page-description Inspect proxy and upstream log streams in parallel or individually.
+  div#logviewer-content[data-htmz-get="/ui/partials/logviewer?view=#{$.LogViewerMode}"][data-htmz-target="#logviewer-content"][data-htmz-poll="5000"]
+    import ../partials/logviewer

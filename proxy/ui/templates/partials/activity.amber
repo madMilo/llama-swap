@@ -1,0 +1,35 @@
+if ActivityMetrics != nil && len(ActivityMetrics) > 0
+  div.topcoat-card
+    table.activity-table
+      thead
+        tr
+          th ID
+          th Time
+          th Model
+          th Cached
+          th Prompt
+          th Generated
+          th Prompt Processing
+          th Generation Speed
+          th Duration
+          th Capture
+      tbody
+        each $metric in ActivityMetrics
+          tr
+            td #{$metric.DisplayID}
+            td #{$metric.TimeAgo}
+            td #{$metric.Model}
+            td #{$metric.CachedTokens}
+            td #{$metric.InputTokens}
+            td #{$metric.OutputTokens}
+            td #{$metric.PromptSpeed}
+            td #{$metric.GenerationSpeed}
+            td #{$metric.Duration}
+            td
+              if $metric.HasCapture
+                a.topcoat-button.topcoat-button--cta[href="/ui/partials/activity/capture/#{$metric.ID}"][data-htmz-get="/ui/partials/activity/capture/#{$metric.ID}"][data-htmz-target="#activity-capture"] View
+              else
+                span.topcoat-muted -
+else
+  div.topcoat-card.empty-state
+    p.topcoat-muted No metrics data available.
