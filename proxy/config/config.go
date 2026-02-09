@@ -124,6 +124,9 @@ type Config struct {
 	LogToStdout        string                        `yaml:"logToStdout"`
 	MetricsMaxInMemory int                           `yaml:"metricsMaxInMemory"`
 	CaptureBuffer      int                           `yaml:"captureBuffer"`
+	GpuVramCapMB       uint64                        `yaml:"gpuVramCapMB"`
+	GpuVramCapsMB      []uint64                      `yaml:"gpuVramCapsMB"`
+	HostRamCapMB       uint64                        `yaml:"hostRamCapMB"`
 	ModelSources       map[string]ModelSourceConfig  `yaml:"modelSources"`
 	ParameterSets      map[string]ParameterSetConfig `yaml:"parameterSets"`
 	Models             map[string]ModelConfig        `yaml:"models"` /* key is model ID */

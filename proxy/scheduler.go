@@ -10,6 +10,7 @@ import (
 
 var ErrInsufficientVRAM = errors.New("insufficient vram for scheduling")
 var ErrUnknownFootprint = errors.New("unknown model memory footprint")
+var ErrInsufficientHostRAM = errors.New("insufficient host ram for scheduling")
 
 type GPUInfo struct {
 	Index   int
@@ -26,17 +27,33 @@ type Scheduler struct {
 	logger    *LogMonitor
 	provider  func() []*Process
 	mu        sync.Mutex
+
+	gpuVramCapMB  uint64
+	gpuVramCapsMB []uint64
+	hostRamCapMB  uint64
 }
 
-func NewScheduler(allocator GPUAllocator, logger *LogMonitor, provider func() []*Process) *Scheduler {
+type SchedulerOptions struct {
+	GpuVramCapMB  uint64
+	GpuVramCapsMB []uint64
+	HostRamCapMB  uint64
+}
+
+func NewScheduler(allocator GPUAllocator, logger *LogMonitor, provider func() []*Process, opts SchedulerOptions) *Scheduler {
 	return &Scheduler{
-		allocator: allocator,
-		logger:    logger,
-		provider:  provider,
+		allocator:     allocator,
+		logger:        logger,
+		provider:      provider,
+		gpuVramCapMB:  opts.GpuVramCapMB,
+		gpuVramCapsMB: append([]uint64(nil), opts.GpuVramCapsMB...),
+		hostRamCapMB:  opts.HostRamCapMB,
 	}
 }
 
 func (s *Scheduler) ScheduleProcess(process *Process) error {
+	if err := s.ensureHostRamCapacity(process); err != nil {
+		return err
+	}
 	if strings.ToLower(process.FitPolicy()) != "evict_to_fit" {
 		return nil
 	}
@@ -57,6 +74,7 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 	if err != nil {
 		return err
 	}
+	gpus = s.applyVramCaps(gpus)
 	if len(gpus) == 0 {
 		return fmt.Errorf("no GPUs detected for scheduling")
 	}
@@ -205,4 +223,75 @@ func hasUnknownFootprint(processes []*Process) bool {
 		}
 	}
 	return false
+}
+
+func (s *Scheduler) applyVramCaps(gpus []GPUInfo) []GPUInfo {
+	if s.gpuVramCapMB == 0 && len(s.gpuVramCapsMB) == 0 {
+		return gpus
+	}
+	capped := make([]GPUInfo, 0, len(gpus))
+	for _, gpu := range gpus {
+		capMB := s.vramCapForGPU(gpu.Index)
+		if capMB > 0 {
+			if gpu.TotalMB > capMB {
+				gpu.TotalMB = capMB
+			}
+			if gpu.FreeMB > capMB {
+				gpu.FreeMB = capMB
+			}
+			if gpu.FreeMB > gpu.TotalMB {
+				gpu.FreeMB = gpu.TotalMB
+			}
+		}
+		capped = append(capped, gpu)
+	}
+	return capped
+}
+
+func (s *Scheduler) vramCapForGPU(index int) uint64 {
+	if index >= 0 && index < len(s.gpuVramCapsMB) && s.gpuVramCapsMB[index] > 0 {
+		return s.gpuVramCapsMB[index]
+	}
+	return s.gpuVramCapMB
+}
+
+func (s *Scheduler) ensureHostRamCapacity(process *Process) error {
+	if s.hostRamCapMB == 0 || !shouldAccountHostRam(process) {
+		return nil
+	}
+
+	requiredMB := process.MeasuredCpuMB()
+	if requiredMB == 0 {
+		return ErrUnknownFootprint
+	}
+
+	running := s.provider()
+	total, ok := sumCpuMB(running)
+	if !ok {
+		return ErrUnknownFootprint
+	}
+
+	if total+requiredMB > s.hostRamCapMB {
+		return ErrInsufficientHostRAM
+	}
+	return nil
+}
+
+func shouldAccountHostRam(process *Process) bool {
+	return !strings.EqualFold(process.FitPolicy(), "spill")
+}
+
+func sumCpuMB(processes []*Process) (uint64, bool) {
+	var total uint64
+	for _, process := range processes {
+		if !shouldAccountHostRam(process) {
+			continue
+		}
+		used := process.MeasuredCpuMB()
+		if used == 0 {
+			return 0, false
+		}
+		total += used
+	}
+	return total, true
 }

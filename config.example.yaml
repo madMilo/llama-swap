@@ -55,6 +55,21 @@ metricsMaxInMemory: 1000
 # - set to 0 to disable
 captureBuffer: 15
 
+# gpuVramCapMB: clamp GPU VRAM totals used for scheduling
+# - optional, default: 0 (disabled)
+# - when set, free/total VRAM is capped to this value for all GPUs
+gpuVramCapMB: 0
+
+# gpuVramCapsMB: per-GPU VRAM caps (in MB) by index
+# - optional, default: []
+# - overrides gpuVramCapMB for specific GPUs
+gpuVramCapsMB: [24576, 24576]
+
+# hostRamCapMB: total host RAM cap for models without fitPolicy=spill
+# - optional, default: 0 (disabled)
+# - enforced across running + new processes that are not using --fit via spill
+hostRamCapMB: 131072
+
 # startPort: sets the starting port number for the automatic ${PORT} macro.
 # - optional, default: 5800
 # - the ${PORT} macro can be used in model.cmd and model.proxy settings
