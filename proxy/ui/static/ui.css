@@ -42,6 +42,7 @@ main {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.85rem;
   white-space: pre-wrap;
+  overflow: auto;
 }
 
 .badge-list {
@@ -105,4 +106,70 @@ main {
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
+}
+
+.activity-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.activity-table th,
+.activity-table td {
+  padding: 0.6rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--topcoat-border);
+  vertical-align: top;
+}
+
+.activity-table th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--topcoat-muted);
+}
+
+.activity-table td {
+  white-space: nowrap;
+}
+
+.activity-table td:nth-child(3) {
+  white-space: normal;
+}
+
+.capture-card {
+  margin-top: 1.5rem;
+}
+
+.capture-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.capture-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.capture-label {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--topcoat-muted);
+  letter-spacing: 0.04em;
+}
+
+.log-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.log-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
