@@ -1,4 +1,4 @@
-if ActivityMetrics != nil && len(ActivityMetrics) > 0
+if len(ActivityMetrics) > 0
   div.topcoat-card
     table.activity-table
       thead
