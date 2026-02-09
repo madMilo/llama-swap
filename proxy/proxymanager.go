@@ -54,6 +54,8 @@ type ProxyManager struct {
 	commit    string
 	version   string
 
+	uiTemplates *UITemplates
+
 	// peer proxy see: #296, #433
 	peerProxy *PeerProxy
 }
@@ -166,6 +168,13 @@ func New(proxyConfig config.Config) *ProxyManager {
 		version:   "0",
 
 		peerProxy: peerProxy,
+	}
+
+	uiTemplates, err := loadUITemplates()
+	if err != nil {
+		proxyLogger.Errorf("Failed to load UI templates: %v", err)
+	} else {
+		pm.uiTemplates = uiTemplates
 	}
 
 	// create the process groups
@@ -354,46 +363,33 @@ func (pm *ProxyManager) setupGinEngine() {
 	})
 
 	pm.ginEngine.GET("/favicon.ico", func(c *gin.Context) {
-		if data, err := reactStaticFS.ReadFile("ui_dist/favicon.ico"); err == nil {
-			c.Data(http.StatusOK, "image/x-icon", data)
+		if data, err := readUIStatic("favicon.svg"); err == nil {
+			c.Data(http.StatusOK, "image/svg+xml", data)
 		} else {
 			c.String(http.StatusInternalServerError, err.Error())
 		}
 	})
 
-	reactFS, err := GetReactFS()
+	pm.ginEngine.GET("/ui", pm.uiIndexHandler)
+	pm.ginEngine.GET("/ui/", pm.uiIndexHandler)
+	pm.ginEngine.GET("/ui/models", pm.uiModelsPageHandler)
+	pm.ginEngine.GET("/ui/running", pm.uiRunningPageHandler)
+	pm.ginEngine.GET("/ui/logs", pm.uiLogsPageHandler)
+	pm.ginEngine.GET("/ui/partials/models", pm.uiModelsPartialHandler)
+	pm.ginEngine.GET("/ui/partials/running", pm.uiRunningPartialHandler)
+	pm.ginEngine.GET("/ui/partials/logs", pm.uiLogsPartialHandler)
+
+	uiStaticFS, err := GetUIStaticFS()
 	if err != nil {
-		pm.proxyLogger.Errorf("Failed to load React filesystem: %v", err)
+		pm.proxyLogger.Errorf("Failed to load UI static filesystem: %v", err)
 	} else {
-		// Serve files with compression support under /ui/*
-		// This handler checks for pre-compressed .br and .gz files
-		pm.ginEngine.GET("/ui/*filepath", func(c *gin.Context) {
+		pm.ginEngine.GET("/ui/static/*filepath", func(c *gin.Context) {
 			filepath := strings.TrimPrefix(c.Param("filepath"), "/")
-			// Default to index.html for directory-like paths
 			if filepath == "" {
-				filepath = "index.html"
-			}
-
-			ServeCompressedFile(reactFS, c.Writer, c.Request, filepath)
-		})
-
-		// Serve SPA for UI under /ui/* - fallback to index.html for client-side routing
-		pm.ginEngine.NoRoute(func(c *gin.Context) {
-			if !strings.HasPrefix(c.Request.URL.Path, "/ui") {
 				c.AbortWithStatus(http.StatusNotFound)
 				return
 			}
-
-			// Check if this looks like a file request (has extension)
-			path := c.Request.URL.Path
-			if strings.Contains(path, ".") && !strings.HasSuffix(path, "/") {
-				// This was likely a file request that wasn't found
-				c.AbortWithStatus(http.StatusNotFound)
-				return
-			}
-
-			// Serve index.html for SPA routing
-			ServeCompressedFile(reactFS, c.Writer, c.Request, "index.html")
+			ServeCompressedFile(uiStaticFS, c.Writer, c.Request, filepath)
 		})
 	}
 

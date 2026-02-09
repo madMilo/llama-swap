@@ -4,6 +4,7 @@ go 1.25.4
 
 require (
 	github.com/billziss-gh/golib v0.2.0
+	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/stretchr/testify v1.9.0

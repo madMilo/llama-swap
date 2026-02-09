@@ -19,42 +19,31 @@ all: mac linux simple-responder
 clean:
 	rm -rf $(BUILD_DIR)
 
-proxy/ui_dist/placeholder.txt:
-	mkdir -p proxy/ui_dist
-	touch $@
-
 # use cached test results while developing
-test-dev: proxy/ui_dist/placeholder.txt
+test-dev:
 	go test -short ./proxy/...
 	staticcheck ./proxy/... || true
 
-test: proxy/ui_dist/placeholder.txt
+test:
 	go test -short -count=1 ./proxy/...
 
 # for CI - full test (takes longer)
-test-all: proxy/ui_dist/placeholder.txt
+test-all:
 	go test -race -count=1 ./proxy/...
 
-ui/node_modules:
-	cd ui-svelte && npm install
-
-# build react UI
-ui: ui/node_modules
-	cd ui-svelte && npm run build
-
 # Build OSX binary
-mac: ui
+mac:
 	@echo "Building Mac binary..."
 	GOOS=darwin GOARCH=arm64 go build -ldflags="-X main.commit=${GIT_HASH} -X main.version=local_${GIT_HASH} -X main.date=${BUILD_DATE}" -o $(BUILD_DIR)/$(APP_NAME)-darwin-arm64
 
 # Build Linux binary
-linux: ui
+linux:
 	@echo "Building Linux binary..."
 	GOOS=linux GOARCH=amd64 go build -ldflags="-X main.commit=${GIT_HASH} -X main.version=local_${GIT_HASH} -X main.date=${BUILD_DATE}" -o $(BUILD_DIR)/$(APP_NAME)-linux-amd64
 	GOOS=linux GOARCH=arm64 go build -ldflags="-X main.commit=${GIT_HASH} -X main.version=local_${GIT_HASH} -X main.date=${BUILD_DATE}" -o $(BUILD_DIR)/$(APP_NAME)-linux-arm64
 
 # Build Windows binary
-windows: ui
+windows:
 	@echo "Building Windows binary..."
 	GOOS=windows GOARCH=amd64 go build -ldflags="-X main.commit=${GIT_HASH} -X main.version=local_${GIT_HASH} -X main.date=${BUILD_DATE}" -o $(BUILD_DIR)/$(APP_NAME)-windows-amd64.exe
 
@@ -93,4 +82,4 @@ wol-proxy: $(BUILD_DIR)
 	go build -o $(BUILD_DIR)/wol-proxy-$(GOOS)-$(GOARCH)-$(shell date +%Y-%m-%d) cmd/wol-proxy/wol-proxy.go
 
 # Phony targets
-.PHONY: all clean ui mac linux windows simple-responder simple-responder-windows test test-all test-dev wol-proxy
+.PHONY: all clean mac linux windows simple-responder simple-responder-windows test test-all test-dev wol-proxy

@@ -1,0 +1,5 @@
+if Logs != ""
+  pre.pre-block #{$.Logs}
+else
+  div.topcoat-card.empty-state
+    p.topcoat-muted No logs captured yet.

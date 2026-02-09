@@ -1,0 +1,29 @@
+doctype 5
+html
+  head
+    meta[charset="utf-8"]
+    meta[name="viewport"][content="width=device-width, initial-scale=1"]
+    title
+      block title
+        | Llama Swap
+    link[rel="icon"][type="image/svg+xml"][href="/ui/static/favicon.svg"]
+    link[rel="stylesheet"][href="/ui/static/topcoat.css"]
+    link[rel="stylesheet"][href="/ui/static/ui.css"]
+  body
+    header.topcoat-navigation-bar
+      span.topcoat-navigation-bar__title Llama Swap UI
+      each $item in NavItems
+        if $item.Active
+          span.topcoat-navigation-bar__item.topcoat-navigation-bar__item--active #{$item.Label}
+        else
+          a.topcoat-navigation-bar__item[href=$item.Path] #{$item.Label}
+    main
+      block content
+    footer.footer
+      if VersionInfo.Version != ""
+        span Version #{VersionInfo.Version}
+      if VersionInfo.Commit != ""
+        span · Commit #{VersionInfo.Commit}
+      if VersionInfo.BuildDate != ""
+        span · Built #{VersionInfo.BuildDate}
+    script[src="/ui/static/htmz.js"]

@@ -1,0 +1,35 @@
+if len(Models) > 0
+  table.topcoat-table
+    thead
+      tr
+        th Model ID
+        th Name
+        th Description
+        th Source
+        th Aliases
+    tbody
+      each $model in Models
+        tr
+          td #{$model.ID}
+          td
+            if $model.Name != ""
+              | #{$model.Name}
+            else
+              span.topcoat-muted (unnamed)
+          td
+            if $model.Description != ""
+              | #{$model.Description}
+            else
+              span.topcoat-muted (none)
+          td
+            span.topcoat-label #{$model.Source}
+          td
+            if len($model.Aliases) > 0
+              div.badge-list
+                each $alias in $model.Aliases
+                  span.topcoat-label #{$alias}
+            else
+              span.topcoat-muted —
+else
+  div.topcoat-card.empty-state
+    p.topcoat-muted No models are configured yet.
