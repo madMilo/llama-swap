@@ -11,8 +11,6 @@ type ModelSourceConfig struct {
 	UnloadAfter      int            `yaml:"ttl"`
 	Unlisted         bool           `yaml:"unlisted"`
 	UseModelName     string         `yaml:"useModelName"`
-	VramMB           int            `yaml:"vramMb"`
-	MinVramMB        int            `yaml:"minVramMb"`
 	FitPolicy        string         `yaml:"fitPolicy"`
 	CpuMoe           int            `yaml:"cpuMoe"`
 	Name             string         `yaml:"name"`
@@ -31,8 +29,6 @@ type ParameterSetConfig struct {
 	UnloadAfter      int            `yaml:"ttl"`
 	Unlisted         bool           `yaml:"unlisted"`
 	UseModelName     string         `yaml:"useModelName"`
-	VramMB           int            `yaml:"vramMb"`
-	MinVramMB        int            `yaml:"minVramMb"`
 	FitPolicy        string         `yaml:"fitPolicy"`
 	CpuMoe           int            `yaml:"cpuMoe"`
 	Name             string         `yaml:"name"`

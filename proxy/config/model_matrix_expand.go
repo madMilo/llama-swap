@@ -91,20 +91,6 @@ func buildGeneratedModelConfig(sourceID, paramID string, source ModelSourceConfi
 		model.Unlisted = true
 	}
 
-	if source.VramMB > 0 {
-		model.VramMB = source.VramMB
-	}
-	if param.VramMB > 0 {
-		model.VramMB = param.VramMB
-	}
-
-	if source.MinVramMB > 0 {
-		model.MinVramMB = source.MinVramMB
-	}
-	if param.MinVramMB > 0 {
-		model.MinVramMB = param.MinVramMB
-	}
-
 	if source.FitPolicy != "" {
 		model.FitPolicy = source.FitPolicy
 	}
@@ -213,12 +199,6 @@ func mergeModelConfig(base, override ModelConfig) ModelConfig {
 	}
 	if override.Unlisted {
 		merged.Unlisted = override.Unlisted
-	}
-	if override.VramMB > 0 {
-		merged.VramMB = override.VramMB
-	}
-	if override.MinVramMB > 0 {
-		merged.MinVramMB = override.MinVramMB
 	}
 	if override.FitPolicy != "" {
 		merged.FitPolicy = override.FitPolicy
