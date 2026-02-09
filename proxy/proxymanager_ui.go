@@ -43,6 +43,7 @@ type UIPageData struct {
 	Models           []UIModel
 	RunningProcesses []UIRunningProcess
 	Logs             string
+	PlaygroundTab    string
 }
 
 func (pm *ProxyManager) uiIndexHandler(c *gin.Context) {
@@ -67,6 +68,14 @@ func (pm *ProxyManager) uiLogsPageHandler(c *gin.Context) {
 	pm.renderUITemplate(c, "pages/logs", data)
 }
 
+func (pm *ProxyManager) uiPlaygroundPageHandler(c *gin.Context) {
+	tab := uiPlaygroundTab(c.Query("tab"))
+	data := pm.uiPageData("/ui/playground")
+	data.PlaygroundTab = tab
+	data.Models = pm.uiModelsList()
+	pm.renderUITemplate(c, "pages/playground", data)
+}
+
 func (pm *ProxyManager) uiModelsPartialHandler(c *gin.Context) {
 	data := pm.uiPageData("/ui/models")
 	data.Models = pm.uiModelsList()
@@ -85,18 +94,52 @@ func (pm *ProxyManager) uiLogsPartialHandler(c *gin.Context) {
 	pm.renderUITemplate(c, "partials/logs", data)
 }
 
+func (pm *ProxyManager) uiPlaygroundChatPartialHandler(c *gin.Context) {
+	data := pm.uiPageData("/ui/playground")
+	data.Models = pm.uiModelsList()
+	pm.renderUITemplate(c, "partials/playground_chat", data)
+}
+
+func (pm *ProxyManager) uiPlaygroundImagesPartialHandler(c *gin.Context) {
+	data := pm.uiPageData("/ui/playground")
+	data.Models = pm.uiModelsList()
+	pm.renderUITemplate(c, "partials/playground_images", data)
+}
+
+func (pm *ProxyManager) uiPlaygroundSpeechPartialHandler(c *gin.Context) {
+	data := pm.uiPageData("/ui/playground")
+	data.Models = pm.uiModelsList()
+	pm.renderUITemplate(c, "partials/playground_speech", data)
+}
+
+func (pm *ProxyManager) uiPlaygroundAudioPartialHandler(c *gin.Context) {
+	data := pm.uiPageData("/ui/playground")
+	data.Models = pm.uiModelsList()
+	pm.renderUITemplate(c, "partials/playground_audio", data)
+}
+
 func (pm *ProxyManager) uiPageData(activePath string) UIPageData {
 	return UIPageData{
 		NavItems: []UINavigationItem{
 			{Label: "Models", Path: "/ui/models", Active: activePath == "/ui/models"},
 			{Label: "Running", Path: "/ui/running", Active: activePath == "/ui/running"},
 			{Label: "Logs", Path: "/ui/logs", Active: activePath == "/ui/logs"},
+			{Label: "Playground", Path: "/ui/playground", Active: activePath == "/ui/playground"},
 		},
 		VersionInfo: UIVersionInfo{
 			Version:   pm.version,
 			Commit:    pm.commit,
 			BuildDate: pm.buildDate,
 		},
+	}
+}
+
+func uiPlaygroundTab(tab string) string {
+	switch tab {
+	case "chat", "images", "speech", "audio":
+		return tab
+	default:
+		return "chat"
 	}
 }
 

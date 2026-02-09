@@ -1,0 +1,32 @@
+div.topcoat-card.playground-card
+  div
+    h2 Text-to-speech
+    p.topcoat-muted Endpoint: POST /v1/audio/speech.
+  div.playground-grid
+    div.playground-field
+      label[for="playground-speech-model"] Model
+      select#playground-speech-model.playground-select[name="model"]
+        option[value=""][disabled="disabled"][selected="selected"] Select a speech model...
+        each $model in Models
+          option[value=$model.ID] #{$model.ID}
+    div.playground-field
+      label[for="playground-speech-voice"] Voice
+      select#playground-speech-voice.playground-select[name="voice"]
+        option[value="coral"][selected="selected"] coral
+        option[value="alloy"] alloy
+        option[value="echo"] echo
+        option[value="fable"] fable
+        option[value="onyx"] onyx
+        option[value="nova"] nova
+        option[value="shimmer"] shimmer
+    div.playground-field
+      label[for="playground-speech-autoplay"] Auto-play
+      div.playground-inline
+        input#playground-speech-autoplay[type="checkbox"]
+        span.playground-helper Default off. Auto-play when enabled in the Svelte UI.
+  div.playground-field
+    label[for="playground-speech-input"] Input text
+    textarea#playground-speech-input.playground-textarea[name="input"][rows="4"][placeholder="Enter text to synthesize..."]
+  div.playground-inline
+    a.topcoat-button[href="/ui/playground?tab=speech"][data-htmz-get="/ui/partials/playground/speech"][data-htmz-target="#playground-content"] Refresh speech tab
+    span.playground-helper Available voices can be queried from GET /v1/audio/voices?model=...

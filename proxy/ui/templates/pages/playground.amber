@@ -1,0 +1,44 @@
+extends ../layouts/base
+
+block title
+  | Playground · Llama Swap
+
+block content
+  div.section-header
+    h1 Playground
+    div.section-actions
+      if PlaygroundTab == "images"
+        a.topcoat-button[href="/ui/playground?tab=images"][data-htmz-get="/ui/partials/playground/images"][data-htmz-target="#playground-content"] Refresh tab
+      else if PlaygroundTab == "speech"
+        a.topcoat-button[href="/ui/playground?tab=speech"][data-htmz-get="/ui/partials/playground/speech"][data-htmz-target="#playground-content"] Refresh tab
+      else if PlaygroundTab == "audio"
+        a.topcoat-button[href="/ui/playground?tab=audio"][data-htmz-get="/ui/partials/playground/audio"][data-htmz-target="#playground-content"] Refresh tab
+      else
+        a.topcoat-button[href="/ui/playground?tab=chat"][data-htmz-get="/ui/partials/playground/chat"][data-htmz-target="#playground-content"] Refresh tab
+  p.page-description Explore chat, image, speech, and transcription requests using the same defaults as the Svelte playground.
+  nav.playground-tabs
+    if PlaygroundTab == "chat"
+      a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=chat"][data-htmz-get="/ui/partials/playground/chat"][data-htmz-target="#playground-content"] Chat
+    else
+      a.topcoat-button[href="/ui/playground?tab=chat"][data-htmz-get="/ui/partials/playground/chat"][data-htmz-target="#playground-content"] Chat
+    if PlaygroundTab == "images"
+      a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=images"][data-htmz-get="/ui/partials/playground/images"][data-htmz-target="#playground-content"] Images
+    else
+      a.topcoat-button[href="/ui/playground?tab=images"][data-htmz-get="/ui/partials/playground/images"][data-htmz-target="#playground-content"] Images
+    if PlaygroundTab == "speech"
+      a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=speech"][data-htmz-get="/ui/partials/playground/speech"][data-htmz-target="#playground-content"] Speech
+    else
+      a.topcoat-button[href="/ui/playground?tab=speech"][data-htmz-get="/ui/partials/playground/speech"][data-htmz-target="#playground-content"] Speech
+    if PlaygroundTab == "audio"
+      a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=audio"][data-htmz-get="/ui/partials/playground/audio"][data-htmz-target="#playground-content"] Transcription
+    else
+      a.topcoat-button[href="/ui/playground?tab=audio"][data-htmz-get="/ui/partials/playground/audio"][data-htmz-target="#playground-content"] Transcription
+  div#playground-content
+    if PlaygroundTab == "images"
+      import ../partials/playground_images
+    else if PlaygroundTab == "speech"
+      import ../partials/playground_speech
+    else if PlaygroundTab == "audio"
+      import ../partials/playground_audio
+    else
+      import ../partials/playground_chat

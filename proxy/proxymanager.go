@@ -375,9 +375,14 @@ func (pm *ProxyManager) setupGinEngine() {
 	pm.ginEngine.GET("/ui/models", pm.uiModelsPageHandler)
 	pm.ginEngine.GET("/ui/running", pm.uiRunningPageHandler)
 	pm.ginEngine.GET("/ui/logs", pm.uiLogsPageHandler)
+	pm.ginEngine.GET("/ui/playground", pm.uiPlaygroundPageHandler)
 	pm.ginEngine.GET("/ui/partials/models", pm.uiModelsPartialHandler)
 	pm.ginEngine.GET("/ui/partials/running", pm.uiRunningPartialHandler)
 	pm.ginEngine.GET("/ui/partials/logs", pm.uiLogsPartialHandler)
+	pm.ginEngine.GET("/ui/partials/playground/chat", pm.uiPlaygroundChatPartialHandler)
+	pm.ginEngine.GET("/ui/partials/playground/images", pm.uiPlaygroundImagesPartialHandler)
+	pm.ginEngine.GET("/ui/partials/playground/speech", pm.uiPlaygroundSpeechPartialHandler)
+	pm.ginEngine.GET("/ui/partials/playground/audio", pm.uiPlaygroundAudioPartialHandler)
 
 	uiStaticFS, err := GetUIStaticFS()
 	if err != nil {
