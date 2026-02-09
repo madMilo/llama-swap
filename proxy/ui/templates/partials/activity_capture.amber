@@ -12,24 +12,24 @@ div.topcoat-card.capture-card
         h4 Request
         if ActivityCapture.HasReqHeaders
           p.capture-label Headers
-          pre.pre-block #{$.ActivityCapture.ReqHeaders}
+          pre.pre-block #{ActivityCapture.ReqHeaders}
         else
           p.topcoat-muted No request headers captured.
         if ActivityCapture.HasReqBody
           p.capture-label #{ActivityCapture.ReqBodyLabel}
-          pre.pre-block #{$.ActivityCapture.ReqBody}
+          pre.pre-block #{ActivityCapture.ReqBody}
         else
           p.topcoat-muted No request body captured.
       div.capture-panel
         h4 Response
         if ActivityCapture.HasRespHeaders
           p.capture-label Headers
-          pre.pre-block #{$.ActivityCapture.RespHeaders}
+          pre.pre-block #{ActivityCapture.RespHeaders}
         else
           p.topcoat-muted No response headers captured.
         if ActivityCapture.HasRespBody
           p.capture-label #{ActivityCapture.RespBodyLabel}
-          pre.pre-block #{$.ActivityCapture.RespBody}
+          pre.pre-block #{ActivityCapture.RespBody}
         else
           p.topcoat-muted No response body captured.
   else if ActivityCaptureNote != ""
