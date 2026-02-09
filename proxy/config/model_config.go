@@ -17,6 +17,8 @@ type ModelConfig struct {
 	UseModelName  string   `yaml:"useModelName"`
 	FitPolicy     string   `yaml:"fitPolicy"`
 	CpuMoe        int      `yaml:"cpuMoe"`
+	InitialVramMB uint64   `yaml:"initialVramMB"`
+	InitialCpuMB  uint64   `yaml:"initialCpuMB"`
 
 	// #179 for /v1/models
 	Name        string `yaml:"name"`
@@ -53,6 +55,8 @@ func DefaultModelConfig() ModelConfig {
 		UseModelName:     "",
 		FitPolicy:        "",
 		CpuMoe:           0,
+		InitialVramMB:    0,
+		InitialCpuMB:     0,
 		ConcurrencyLimit: 0,
 		Name:             "",
 		Description:      "",
