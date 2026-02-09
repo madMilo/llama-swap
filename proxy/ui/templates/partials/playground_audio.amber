@@ -1,0 +1,18 @@
+div.topcoat-card.playground-card
+  div
+    h2 Audio transcription
+    p.topcoat-muted Endpoint: POST /v1/audio/transcriptions.
+  div.playground-grid
+    div.playground-field
+      label[for="playground-audio-model"] Model
+      select#playground-audio-model.playground-select[name="model"]
+        option[value=""][disabled="disabled"][selected="selected"] Select an audio model...
+        each $model in Models
+          option[value=$model.ID] #{$model.ID}
+    div.playground-field
+      label[for="playground-audio-file"] Audio file
+      input#playground-audio-file.playground-input[type="file"][accept=".mp3,.wav"]
+      span.playground-helper Accepted formats: MP3, WAV (max 25MB).
+  div.playground-inline
+    a.topcoat-button[href="/ui/playground?tab=audio"][data-htmz-get="/ui/partials/playground/audio"][data-htmz-target="#playground-content"] Refresh transcription tab
+    span.playground-helper Transcriptions return JSON with a text field.

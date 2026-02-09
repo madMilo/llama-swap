@@ -1,0 +1,31 @@
+div.topcoat-card.playground-card
+  div
+    h2 Image generation
+    p.topcoat-muted Endpoint: POST /v1/images/generations (n=1).
+  div.playground-grid
+    div.playground-field
+      label[for="playground-image-model"] Model
+      select#playground-image-model.playground-select[name="model"]
+        option[value=""][disabled="disabled"][selected="selected"] Select an image model...
+        each $model in Models
+          option[value=$model.ID] #{$model.ID}
+    div.playground-field
+      label[for="playground-image-size"] Size
+      select#playground-image-size.playground-select[name="size"]
+        optgroup[label="Square"]
+          option[value="512x512"] 512x512
+          option[value="1024x1024"][selected="selected"] 1024x1024
+        optgroup[label="Landscape"]
+          option[value="1024x768"] 1024x768 (4:3)
+          option[value="1280x720"] 1280x720 (16:9)
+          option[value="1792x1024"] 1792x1024 (SDXL)
+        optgroup[label="Portrait"]
+          option[value="768x1024"] 768x1024 (3:4)
+          option[value="720x1280"] 720x1280 (9:16)
+          option[value="1024x1792"] 1024x1792 (SDXL)
+  div.playground-field
+    label[for="playground-image-prompt"] Prompt
+    textarea#playground-image-prompt.playground-textarea[name="prompt"][rows="4"][placeholder="Describe the image you want to generate..."]
+  div.playground-inline
+    a.topcoat-button[href="/ui/playground?tab=images"][data-htmz-get="/ui/partials/playground/images"][data-htmz-target="#playground-content"] Refresh images tab
+    span.playground-helper The response returns base64-encoded data or a URL.

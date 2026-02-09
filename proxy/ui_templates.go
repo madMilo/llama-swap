@@ -13,12 +13,17 @@ type UITemplates struct {
 
 func loadUITemplates() (*UITemplates, error) {
 	templatePaths := map[string]string{
-		"pages/models":     "ui/templates/pages/models.amber",
-		"pages/running":    "ui/templates/pages/running.amber",
-		"pages/logs":       "ui/templates/pages/logs.amber",
-		"partials/models":  "ui/templates/partials/models.amber",
-		"partials/running": "ui/templates/partials/running.amber",
-		"partials/logs":    "ui/templates/partials/logs.amber",
+		"pages/models":               "ui/templates/pages/models.amber",
+		"pages/running":              "ui/templates/pages/running.amber",
+		"pages/logs":                 "ui/templates/pages/logs.amber",
+		"pages/playground":           "ui/templates/pages/playground.amber",
+		"partials/models":            "ui/templates/partials/models.amber",
+		"partials/running":           "ui/templates/partials/running.amber",
+		"partials/logs":              "ui/templates/partials/logs.amber",
+		"partials/playground_chat":   "ui/templates/partials/playground_chat.amber",
+		"partials/playground_images": "ui/templates/partials/playground_images.amber",
+		"partials/playground_speech": "ui/templates/partials/playground_speech.amber",
+		"partials/playground_audio":  "ui/templates/partials/playground_audio.amber",
 	}
 
 	opts := amber.Options{

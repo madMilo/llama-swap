@@ -12,11 +12,12 @@ html
   body
     header.topcoat-navigation-bar
       span.topcoat-navigation-bar__title Llama Swap UI
-      each $item in NavItems
-        if $item.Active
-          span.topcoat-navigation-bar__item.topcoat-navigation-bar__item--active #{$item.Label}
-        else
-          a.topcoat-navigation-bar__item[href=$item.Path] #{$item.Label}
+      nav[aria-label="Primary"]
+        each $item in NavItems
+          if $item.Active
+            span.topcoat-navigation-bar__item.topcoat-navigation-bar__item--active #{$item.Label}
+          else
+            a.topcoat-navigation-bar__item[href=$item.Path] #{$item.Label}
     main
       block content
     footer.footer

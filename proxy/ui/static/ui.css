@@ -54,3 +54,55 @@ main {
   padding: 1.5rem;
   text-align: center;
 }
+
+.playground-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.playground-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.playground-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.playground-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.playground-input,
+.playground-select,
+.playground-textarea {
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--topcoat-border);
+  background: var(--topcoat-surface);
+  font-size: 0.95rem;
+}
+
+.playground-textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.playground-helper {
+  font-size: 0.85rem;
+  color: var(--topcoat-muted);
+}
+
+.playground-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
