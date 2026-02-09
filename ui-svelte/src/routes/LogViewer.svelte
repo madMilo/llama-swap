@@ -7,11 +7,13 @@
 
   type ViewMode = "proxy" | "upstream" | "panels";
 
-  const viewModeStore = persistentStore<ViewMode>("logviewer-view-mode", "panels");
+  const viewModeStore = persistentStore<ViewMode>("logviewer-view-mode", "proxy");
 
   let direction = $derived<"horizontal" | "vertical">(
     $screenWidth === "xs" || $screenWidth === "sm" ? "vertical" : "horizontal"
   );
+
+  const hasUpstreamLogs = $derived($upstreamLogs.trim().length > 0);
 
   function cycleViewMode(): void {
     const modes: ViewMode[] = ["panels", "proxy", "upstream"];
@@ -57,7 +59,7 @@
   </div>
 
   <div class="flex-1 w-full overflow-hidden">
-    {#if $viewModeStore === "panels"}
+    {#if $viewModeStore === "panels" && hasUpstreamLogs}
       <ResizablePanels {direction} storageKey="logviewer-panel-group">
         {#snippet leftPanel()}
           <LogPanel id="proxy" title="Proxy Logs" logData={$proxyLogs} />
@@ -67,6 +69,8 @@
         {/snippet}
       </ResizablePanels>
     {:else if $viewModeStore === "proxy"}
+      <LogPanel id="proxy" title="Proxy Logs" logData={$proxyLogs} />
+    {:else if $viewModeStore === "panels"}
       <LogPanel id="proxy" title="Proxy Logs" logData={$proxyLogs} />
     {:else}
       <LogPanel id="upstream" title="Upstream Logs" logData={$upstreamLogs} />
