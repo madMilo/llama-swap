@@ -42,6 +42,8 @@ type ProxyManager struct {
 	metricsMonitor *metricsMonitor
 
 	processGroups map[string]*ProcessGroup
+	scheduler     *Scheduler
+	memoryTracker *MemoryTracker
 
 	// shutdown signaling
 	shutdownCtx    context.Context
@@ -154,6 +156,7 @@ func New(proxyConfig config.Config) *ProxyManager {
 		metricsMonitor: newMetricsMonitor(proxyLogger, maxMetrics, proxyConfig.CaptureBuffer),
 
 		processGroups: make(map[string]*ProcessGroup),
+		memoryTracker: NewMemoryTracker(),
 
 		shutdownCtx:    shutdownCtx,
 		shutdownCancel: shutdownCancel,
@@ -168,7 +171,20 @@ func New(proxyConfig config.Config) *ProxyManager {
 	// create the process groups
 	for groupID := range proxyConfig.Groups {
 		processGroup := NewProcessGroup(groupID, proxyConfig, proxyLogger, upstreamLogger)
+		processGroup.SetMemoryTracker(pm.memoryTracker)
 		pm.processGroups[groupID] = processGroup
+	}
+
+	if hasVramModels(proxyConfig.Models) {
+		scheduler := NewScheduler(NvidiaSMIAllocator{}, proxyLogger, pm.runningProcesses)
+		if _, err := scheduler.allocator.GetGPUs(); err != nil {
+			proxyLogger.Warnf("GPU scheduler disabled: %v", err)
+		} else {
+			pm.scheduler = scheduler
+			for _, processGroup := range pm.processGroups {
+				processGroup.SetScheduler(scheduler)
+			}
+		}
 	}
 
 	pm.setupGinEngine()
@@ -413,6 +429,30 @@ func (pm *ProxyManager) StopProcesses(strategy StopStrategy) {
 	}
 
 	wg.Wait()
+}
+
+func (pm *ProxyManager) runningProcesses() []*Process {
+	pm.Lock()
+	defer pm.Unlock()
+
+	processes := make([]*Process, 0)
+	for _, processGroup := range pm.processGroups {
+		for _, process := range processGroup.processes {
+			if process.CurrentState() == StateReady {
+				processes = append(processes, process)
+			}
+		}
+	}
+	return processes
+}
+
+func hasVramModels(models map[string]config.ModelConfig) bool {
+	for _, model := range models {
+		if strings.EqualFold(model.FitPolicy, "evict_to_fit") {
+			return true
+		}
+	}
+	return false
 }
 
 // Shutdown stops all processes managed by this ProxyManager

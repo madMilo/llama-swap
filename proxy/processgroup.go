@@ -24,6 +24,9 @@ type ProcessGroup struct {
 	// map of current processes
 	processes       map[string]*Process
 	lastUsedProcess string
+
+	scheduler *Scheduler
+	tracker   *MemoryTracker
 }
 
 func NewProcessGroup(id string, config config.Config, proxyLogger *LogMonitor, upstreamLogger *LogMonitor) *ProcessGroup {
@@ -48,10 +51,37 @@ func NewProcessGroup(id string, config config.Config, proxyLogger *LogMonitor, u
 		modelConfig, modelID, _ := pg.config.FindConfig(modelID)
 		processLogger := NewLogMonitorWriter(upstreamLogger)
 		process := NewProcess(modelID, pg.config.HealthCheckTimeout, modelConfig, processLogger, pg.proxyLogger)
+		process.GroupID = id
+		process.GroupExclusive = groupConfig.Exclusive
+		if pg.tracker != nil {
+			process.SetMemoryTracker(pg.tracker, signatureForModel(modelID, modelConfig.Cmd))
+		}
 		pg.processes[modelID] = process
 	}
 
 	return pg
+}
+
+func (pg *ProcessGroup) SetScheduler(scheduler *Scheduler) {
+	pg.scheduler = scheduler
+	if scheduler == nil {
+		for _, process := range pg.processes {
+			process.SetPreStartHook(nil)
+		}
+		return
+	}
+	for _, process := range pg.processes {
+		process.SetPreStartHook(func(proc *Process) error {
+			return scheduler.ScheduleProcess(proc)
+		})
+	}
+}
+
+func (pg *ProcessGroup) SetMemoryTracker(tracker *MemoryTracker) {
+	pg.tracker = tracker
+	for _, process := range pg.processes {
+		process.SetMemoryTracker(tracker, signatureForModel(process.ID, process.config.Cmd))
+	}
 }
 
 // ProxyRequest proxies a request to the specified model

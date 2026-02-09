@@ -117,16 +117,18 @@ type HookOnStartup struct {
 }
 
 type Config struct {
-	HealthCheckTimeout int                    `yaml:"healthCheckTimeout"`
-	LogRequests        bool                   `yaml:"logRequests"`
-	LogLevel           string                 `yaml:"logLevel"`
-	LogTimeFormat      string                 `yaml:"logTimeFormat"`
-	LogToStdout        string                 `yaml:"logToStdout"`
-	MetricsMaxInMemory int                    `yaml:"metricsMaxInMemory"`
-	CaptureBuffer      int                    `yaml:"captureBuffer"`
-	Models             map[string]ModelConfig `yaml:"models"` /* key is model ID */
-	Profiles           map[string][]string    `yaml:"profiles"`
-	Groups             map[string]GroupConfig `yaml:"groups"` /* key is group ID */
+	HealthCheckTimeout int                           `yaml:"healthCheckTimeout"`
+	LogRequests        bool                          `yaml:"logRequests"`
+	LogLevel           string                        `yaml:"logLevel"`
+	LogTimeFormat      string                        `yaml:"logTimeFormat"`
+	LogToStdout        string                        `yaml:"logToStdout"`
+	MetricsMaxInMemory int                           `yaml:"metricsMaxInMemory"`
+	CaptureBuffer      int                           `yaml:"captureBuffer"`
+	ModelSources       map[string]ModelSourceConfig  `yaml:"modelSources"`
+	ParameterSets      map[string]ParameterSetConfig `yaml:"parameterSets"`
+	Models             map[string]ModelConfig        `yaml:"models"` /* key is model ID */
+	Profiles           map[string][]string           `yaml:"profiles"`
+	Groups             map[string]GroupConfig        `yaml:"groups"` /* key is group ID */
 
 	// for key/value replacements in model's cmd, cmdStop, proxy, checkEndPoint
 	Macros MacroList `yaml:"macros"`
@@ -222,6 +224,11 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 		return Config{}, fmt.Errorf("logToStdout must be one of: proxy, upstream, both, none")
 	}
 
+	config, err = expandModelDefinitions(config)
+	if err != nil {
+		return Config{}, err
+	}
+
 	// Populate the aliases map
 	config.aliases = make(map[string]string)
 	for modelName, modelConfig := range config.Models {
@@ -237,6 +244,22 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 	for _, macro := range config.Macros {
 		if err = validateMacro(macro.Name, macro.Value); err != nil {
 			return Config{}, err
+		}
+	}
+
+	for sourceID, source := range config.ModelSources {
+		for _, macro := range source.Macros {
+			if err = validateMacro(macro.Name, macro.Value); err != nil {
+				return Config{}, fmt.Errorf("modelSources.%s: %s", sourceID, err.Error())
+			}
+		}
+	}
+
+	for paramID, param := range config.ParameterSets {
+		for _, macro := range param.Macros {
+			if err = validateMacro(macro.Name, macro.Value); err != nil {
+				return Config{}, fmt.Errorf("parameterSets.%s: %s", paramID, err.Error())
+			}
 		}
 	}
 
@@ -302,6 +325,10 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 				}
 				modelConfig.Metadata = result.(map[string]any)
 			}
+		}
+
+		if err := applyFitPolicy(&modelConfig); err != nil {
+			return Config{}, fmt.Errorf("model %s: %w", modelId, err)
 		}
 
 		// Handle PORT macro - only allocate if cmd uses it
@@ -498,6 +525,44 @@ func AddDefaultGroupToConfig(config Config) Config {
 	config.Groups[DEFAULT_GROUP_ID] = defaultGroup
 
 	return config
+}
+
+func applyFitPolicy(modelConfig *ModelConfig) error {
+	fitPolicy := strings.ToLower(strings.TrimSpace(modelConfig.FitPolicy))
+	if fitPolicy == "" {
+		return nil
+	}
+
+	switch fitPolicy {
+	case "spill", "evict_to_fit", "cpu_moe":
+	default:
+		return fmt.Errorf("fitPolicy must be one of: spill, evict_to_fit, cpu_moe")
+	}
+
+	cmd := modelConfig.Cmd
+	hasFit := strings.Contains(cmd, "--fit")
+	hasCpuMoe := strings.Contains(cmd, "--n-cpu-moe") || strings.Contains(cmd, "--cpu-moe")
+
+	if fitPolicy == "evict_to_fit" {
+		if hasFit {
+			return fmt.Errorf("fitPolicy evict_to_fit conflicts with --fit in cmd")
+		}
+		return nil
+	}
+
+	if !hasFit {
+		if strings.TrimSpace(cmd) == "" {
+			return fmt.Errorf("fitPolicy %s requires cmd to be set", fitPolicy)
+		}
+		cmd = strings.TrimSpace(cmd) + "\n--fit"
+	}
+
+	if fitPolicy == "cpu_moe" && modelConfig.CpuMoe > 0 && !hasCpuMoe {
+		cmd = strings.TrimSpace(cmd) + fmt.Sprintf("\n--n-cpu-moe %d", modelConfig.CpuMoe)
+	}
+
+	modelConfig.Cmd = cmd
+	return nil
 }
 
 func SanitizeCommand(cmdStr string) ([]string, error) {
