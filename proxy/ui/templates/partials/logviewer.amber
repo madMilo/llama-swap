@@ -14,6 +14,14 @@ else if LogViewerMode == "upstream"
     else
       div.topcoat-card.empty-state
         p.topcoat-muted No upstream logs captured yet.
+else if UpstreamLogs == ""
+  div.log-panel
+    h3 Proxy Logs
+    if ProxyLogs != ""
+      pre.pre-block #{$.ProxyLogs}
+    else
+      div.topcoat-card.empty-state
+        p.topcoat-muted No proxy logs captured yet.
 else
   div.log-panels
     div.log-panel

@@ -212,7 +212,7 @@ func uiLogViewerMode(mode string) string {
 	case "proxy", "upstream", "panels":
 		return mode
 	default:
-		return "panels"
+		return "proxy"
 	}
 }
 
