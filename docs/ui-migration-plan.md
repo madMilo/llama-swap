@@ -1,16 +1,17 @@
-# UI migration plan: Svelte → Haml + htmz + Topcoat
+# UI migration plan: Haml + htmz + Topcoat
 
 ## Goals
-- Replace the compiled Svelte UI with server-rendered Haml templates.
+- Replace the compiled UI with server-rendered Haml templates.
 - Use **htmz** for dynamic UI updates (no SPA build step).
 - Adopt **Topcoat** components for consistent styling.
 - Ensure core pages work **without JavaScript** (progressive enhancement).
 
 ## Scope
-- Replace the UI build pipeline under `ui-svelte/` with server-side templates.
+- Replace the existing UI build pipeline with server-side templates.
 - Serve Haml-rendered HTML from the Go backend.
 - Add htmz endpoints for partial updates.
 - Keep all endpoints accessible with plain HTML (no JS requirement).
+- Remove legacy UI assets from the repository.
 
 ## Architecture
 ### 1) Templates
@@ -46,8 +47,8 @@
 - Pages should work without it; enable it for progressive enhancement.
 
 ## Migration steps
-1. **Inventory Svelte routes/components**
-   - Map existing pages to Haml templates.
+1. **Inventory existing routes/components**
+   - Map current pages to Haml templates.
 2. **Introduce template renderer**
    - Add template loader and rendering pipeline in Go using a Haml library.
 3. **Build base layout + navigation**
@@ -56,12 +57,12 @@
    - `/ui/models`, `/ui/running`, `/ui/logs`
 5. **Add htmz partial endpoints**
    - Use `Accept: text/html` fragments.
-6. **Remove Svelte build**
-   - Delete `ui-svelte/` build steps and bundling.
+6. **Remove frontend build**
+   - Delete legacy build steps and bundling.
 
 ## Non-goals
 - No client-side router.
-- No bundler (Vite/Svelte/etc.).
+- No bundler.
 - No mandatory JS.
 
 ## Open questions
