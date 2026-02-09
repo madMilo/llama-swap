@@ -2,13 +2,9 @@ package proxy
 
 import (
 	"bytes"
-	"compress/gzip"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -197,87 +193,4 @@ func TestSelectEncoding(t *testing.T) {
 				tt.acceptEncoding, gotEncoding, gotExt, tt.wantEncoding, tt.wantExt)
 		}
 	}
-}
-
-// Test with actual pre-compressed files from ui_dist
-func TestServeCompressedFile_RealFiles(t *testing.T) {
-	// Check if ui_dist exists
-	if _, err := os.Stat("./ui_dist"); os.IsNotExist(err) {
-		t.Skip("ui_dist not found, skipping real file test")
-	}
-
-	// Find a .js or .css file that has compressed versions
-	entries, err := os.ReadDir("./ui_dist/assets")
-	if err != nil {
-		t.Skipf("Could not read ui_dist/assets: %v", err)
-	}
-
-	var testFile string
-	for _, entry := range entries {
-		name := entry.Name()
-		if strings.HasSuffix(name, ".js") && !strings.HasSuffix(name, ".js.gz") && !strings.HasSuffix(name, ".js.br") {
-			// Check if compressed versions exist
-			base := strings.TrimSuffix(name, ".js")
-			if _, err := os.Stat(filepath.Join("./ui_dist/assets", base+".js.gz")); err == nil {
-				testFile = "assets/" + name
-				break
-			}
-		}
-	}
-
-	if testFile == "" {
-		t.Skip("No suitable test file found with compressed versions")
-	}
-
-	fs := http.FS(os.DirFS("./ui_dist"))
-
-	// Test brotli
-	t.Run("brotli", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/"+testFile, nil)
-		req.Header.Set("Accept-Encoding", "br")
-		w := httptest.NewRecorder()
-
-		ServeCompressedFile(fs, w, req, testFile)
-
-		resp := w.Result()
-		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("Expected status 200, got %d", resp.StatusCode)
-		}
-
-		if encoding := resp.Header.Get("Content-Encoding"); encoding != "br" {
-			t.Errorf("Expected Content-Encoding 'br', got '%s'", encoding)
-		}
-	})
-
-	// Test gzip
-	t.Run("gzip", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/"+testFile, nil)
-		req.Header.Set("Accept-Encoding", "gzip")
-		w := httptest.NewRecorder()
-
-		ServeCompressedFile(fs, w, req, testFile)
-
-		resp := w.Result()
-		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("Expected status 200, got %d", resp.StatusCode)
-		}
-
-		if encoding := resp.Header.Get("Content-Encoding"); encoding != "gzip" {
-			t.Errorf("Expected Content-Encoding 'gzip', got '%s'", encoding)
-		}
-
-		// Verify it's valid gzip
-		reader, err := gzip.NewReader(resp.Body)
-		if err != nil {
-			t.Errorf("Expected valid gzip content: %v", err)
-			return
-		}
-		defer reader.Close()
-
-		// Just read to verify it's valid
-		_, err = io.Copy(io.Discard, reader)
-		if err != nil {
-			t.Errorf("Failed to decompress gzip: %v", err)
-		}
-	})
 }

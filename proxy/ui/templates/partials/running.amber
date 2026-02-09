@@ -1,0 +1,36 @@
+if len(RunningProcesses) > 0
+  table.topcoat-table
+    thead
+      tr
+        th Model
+        th Name
+        th State
+        th Proxy
+        th TTL
+    tbody
+      each $process in RunningProcesses
+        tr
+          td #{$process.Model}
+          td
+            if $process.Name != ""
+              | #{$process.Name}
+            else
+              span.topcoat-muted (unnamed)
+          td
+            if $process.State != ""
+              span.topcoat-label.topcoat-label--success #{$process.State}
+            else
+              span.topcoat-muted —
+          td
+            if $process.Proxy != ""
+              code #{$process.Proxy}
+            else
+              span.topcoat-muted —
+          td
+            if $process.TTL != ""
+              | #{$process.TTL}
+            else
+              span.topcoat-muted —
+else
+  div.topcoat-card.empty-state
+    p.topcoat-muted No processes are currently running.
