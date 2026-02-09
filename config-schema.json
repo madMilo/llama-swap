@@ -91,6 +91,27 @@
             "default": 5,
             "description": "Size in megabytes of the buffer for storing request/response captures. Set to 0 to disable captures."
         },
+        "gpuVramCapMB": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Optional cap (in MB) applied to all GPUs for scheduling. When set, reported GPU free/total memory is clamped to this value."
+        },
+        "gpuVramCapsMB": {
+            "type": "array",
+            "items": {
+                "type": "integer",
+                "minimum": 0
+            },
+            "default": [],
+            "description": "Optional per-GPU VRAM caps (in MB) by index. Overrides gpuVramCapMB for specific GPUs."
+        },
+        "hostRamCapMB": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Optional host RAM cap (in MB) enforced across running + new processes that are not using fitPolicy=spill."
+        },
         "startPort": {
             "type": "integer",
             "default": 5800,

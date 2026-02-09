@@ -206,6 +206,19 @@ func (p *Process) MeasuredVramMB() uint64 {
 	return p.observedFootprint.VramMB
 }
 
+func (p *Process) MeasuredCpuMB() uint64 {
+	if p.memoryTracker == nil || p.memorySignature == "" {
+		if p.observedFootprint.CpuMB > 0 {
+			return p.observedFootprint.CpuMB
+		}
+		return 0
+	}
+	if footprint, ok := p.memoryTracker.Get(p.memorySignature); ok && footprint.CpuMB > 0 {
+		return footprint.CpuMB
+	}
+	return p.observedFootprint.CpuMB
+}
+
 // LogMonitor returns the log monitor associated with the process.
 func (p *Process) LogMonitor() *LogMonitor {
 	return p.processLogger

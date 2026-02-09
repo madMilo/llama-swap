@@ -184,11 +184,24 @@ func New(proxyConfig config.Config) *ProxyManager {
 		pm.processGroups[groupID] = processGroup
 	}
 
-	if hasVramModels(proxyConfig.Models) {
-		scheduler := NewScheduler(NvidiaSMIAllocator{}, proxyLogger, pm.runningProcesses)
-		if _, err := scheduler.allocator.GetGPUs(); err != nil {
-			proxyLogger.Warnf("GPU scheduler disabled: %v", err)
-		} else {
+	shouldScheduleVram := hasVramModels(proxyConfig.Models)
+	shouldScheduleHostRAM := proxyConfig.HostRamCapMB > 0
+	hasVramCaps := proxyConfig.GpuVramCapMB > 0 || len(proxyConfig.GpuVramCapsMB) > 0
+	if shouldScheduleVram || shouldScheduleHostRAM || hasVramCaps {
+		scheduler := NewScheduler(NvidiaSMIAllocator{}, proxyLogger, pm.runningProcesses, SchedulerOptions{
+			GpuVramCapMB:  proxyConfig.GpuVramCapMB,
+			GpuVramCapsMB: proxyConfig.GpuVramCapsMB,
+			HostRamCapMB:  proxyConfig.HostRamCapMB,
+		})
+		if shouldScheduleVram {
+			if _, err := scheduler.allocator.GetGPUs(); err != nil {
+				proxyLogger.Warnf("GPU scheduler disabled: %v", err)
+				if !shouldScheduleHostRAM {
+					scheduler = nil
+				}
+			}
+		}
+		if scheduler != nil {
 			pm.scheduler = scheduler
 			for _, processGroup := range pm.processGroups {
 				processGroup.SetScheduler(scheduler)
