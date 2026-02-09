@@ -17,6 +17,17 @@ export const versionInfo = writable<VersionInfo>({
 
 let apiEventSource: EventSource | null = null;
 
+function normalizeModel(model: Model): Model {
+  return {
+    ...model,
+    measuredVramMB: model.measuredVramMB ?? 0,
+    measuredCpuMB: model.measuredCpuMB ?? 0,
+    fitPolicy: model.fitPolicy ?? "",
+    initialVramMB: model.initialVramMB ?? 0,
+    initialCpuMB: model.initialCpuMB ?? 0,
+  };
+}
+
 function appendLog(newData: string, store: typeof proxyLogs | typeof upstreamLogs): void {
   store.update((prev) => {
     const updatedLog = prev + newData;
@@ -58,10 +69,11 @@ export function enableAPIEvents(enabled: boolean): void {
           case "modelStatus": {
             const newModels = JSON.parse(message.data) as Model[];
             // Sort models by name and id
-            newModels.sort((a, b) => {
+            const normalizedModels = newModels.map(normalizeModel);
+            normalizedModels.sort((a, b) => {
               return (a.name + a.id).localeCompare(b.name + b.id);
             });
-            models.set(newModels);
+            models.set(normalizedModels);
             break;
           }
 
@@ -124,7 +136,7 @@ export async function listModels(): Promise<Model[]> {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    return data || [];
+    return (data || []).map(normalizeModel);
   } catch (error) {
     console.error("Failed to fetch models:", error);
     return [];

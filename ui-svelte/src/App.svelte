@@ -6,12 +6,14 @@
   import Models from "./routes/Models.svelte";
   import Activity from "./routes/Activity.svelte";
   import Playground from "./routes/Playground.svelte";
+  import Recommendations from "./routes/Recommendations.svelte";
   import { enableAPIEvents } from "./stores/api";
   import { initScreenWidth, isDarkMode, appTitle, connectionState } from "./stores/theme";
 
   const routes = {
     "/": Playground,
     "/models": Models,
+    "/recommendations": Recommendations,
     "/logs": LogViewer,
     "/activity": Activity,
     "*": Playground,

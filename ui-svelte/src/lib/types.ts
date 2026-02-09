@@ -9,6 +9,11 @@ export interface Model {
   description: string;
   unlisted: boolean;
   peerID: string;
+  measuredVramMB?: number;
+  measuredCpuMB?: number;
+  fitPolicy?: string;
+  initialVramMB?: number;
+  initialCpuMB?: number;
 }
 
 export interface Metrics {
