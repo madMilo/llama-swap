@@ -1,11 +1,11 @@
-if RecommendationNotes != nil && len(RecommendationNotes) > 0
+if len(RecommendationNotes) > 0
   div.topcoat-card
     h2 Recommendations
     ul
       each $note in RecommendationNotes
         li #{$note}
 
-if RecommendationModels != nil && len(RecommendationModels) > 0
+if len(RecommendationModels) > 0
   div.topcoat-card
     table.activity-table.recommendations-table
       thead

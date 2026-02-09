@@ -3,7 +3,7 @@ div.topcoat-card.capture-card
     h2 Capture Details
     div.section-actions
       a.topcoat-button[href="/ui/partials/activity/capture/clear"][data-htmz-get="/ui/partials/activity/capture/clear"][data-htmz-target="#activity-capture"] Clear
-  if ActivityCapture != nil
+  if ActivityCapture
     h3 Capture ##{ActivityCapture.DisplayID}
     if ActivityCapture.ReqPath != ""
       p.page-description Request path: #{ActivityCapture.ReqPath}
