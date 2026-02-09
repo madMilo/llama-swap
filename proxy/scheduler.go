@@ -61,8 +61,6 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 		return fmt.Errorf("no GPUs detected for scheduling")
 	}
 
-	requiredMB = requiredMB + uint64(process.config.MinVramMB)
-
 	type candidate struct {
 		gpuIndex int
 		evict    []*Process

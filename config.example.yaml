@@ -137,8 +137,6 @@ parameterSets:
       --ctx-size 8192
       --temperature 0.7
     fitPolicy: spill
-    vramMb: 18000
-    minVramMb: 512
 
 # Generated model ID example:
 # - llama3.1-8b-q4k:ctx8k-temp0.7
@@ -223,16 +221,6 @@ models:
     # - useful for when the upstream server expects a specific model name that
     #   is different from the model's ID
     useModelName: "qwen:qwq"
-
-    # vramMb: estimated VRAM usage in MB for scheduling decisions
-    # - optional, default: 0 (disabled)
-    # - for evict_to_fit, llama-swap prefers llama-reported memory from logs
-    #   and will return 503 if no footprint has been observed yet
-    vramMb: 18000
-
-    # minVramMb: extra VRAM buffer in MB added to vramMb during scheduling
-    # - optional, default: 0
-    minVramMb: 512
 
     # fitPolicy: controls --fit behavior for scheduling
     # - optional, default: ""

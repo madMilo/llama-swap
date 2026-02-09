@@ -178,17 +178,6 @@
                         "type": "string",
                         "default": ""
                     },
-                    "vramMb": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "default": 0,
-                        "description": "Optional VRAM hint in MB. Scheduler prefers llama-reported memory footprints."
-                    },
-                    "minVramMb": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "default": 0
-                    },
                     "fitPolicy": {
                         "type": "string",
                         "description": "Scheduling policy for --fit usage. spill adds --fit, evict_to_fit avoids --fit and prefers GPU eviction, cpu_moe enables CPU offload for MoE.",
@@ -280,17 +269,6 @@
                     "useModelName": {
                         "type": "string",
                         "default": ""
-                    },
-                    "vramMb": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "default": 0,
-                        "description": "Optional VRAM hint in MB. Scheduler prefers llama-reported memory footprints."
-                    },
-                    "minVramMb": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "default": 0
                     },
                     "fitPolicy": {
                         "type": "string",
@@ -433,18 +411,6 @@
                         "type": "string",
                         "default": "",
                         "description": "Override the model name sent to upstream server. Useful if upstream expects a different name."
-                    },
-                    "vramMb": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "default": 0,
-                        "description": "Optional VRAM hint in MB. Scheduler prefers llama-reported memory footprints."
-                    },
-                    "minVramMb": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "default": 0,
-                        "description": "Extra VRAM buffer in MB added to vramMb when scheduling."
                     },
                     "fitPolicy": {
                         "type": "string",

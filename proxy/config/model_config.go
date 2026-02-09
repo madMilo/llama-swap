@@ -15,8 +15,6 @@ type ModelConfig struct {
 	UnloadAfter   int      `yaml:"ttl"`
 	Unlisted      bool     `yaml:"unlisted"`
 	UseModelName  string   `yaml:"useModelName"`
-	VramMB        int      `yaml:"vramMb"`
-	MinVramMB     int      `yaml:"minVramMb"`
 	FitPolicy     string   `yaml:"fitPolicy"`
 	CpuMoe        int      `yaml:"cpuMoe"`
 
@@ -53,8 +51,6 @@ func DefaultModelConfig() ModelConfig {
 		UnloadAfter:      0,
 		Unlisted:         false,
 		UseModelName:     "",
-		VramMB:           0,
-		MinVramMB:        0,
 		FitPolicy:        "",
 		CpuMoe:           0,
 		ConcurrencyLimit: 0,
