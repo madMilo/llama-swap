@@ -4,9 +4,7 @@
     "title": "llama-swap configuration",
     "description": "Configuration file for llama-swap",
     "type": "object",
-    "required": [
-        "models"
-    ],
+    "required": [],
     "definitions": {
         "macros": {
             "type": "object",
@@ -111,9 +109,259 @@
         "macros": {
             "$ref": "#/definitions/macros"
         },
+        "modelSources": {
+            "type": "object",
+            "description": "Base GGUF model definitions used to generate model combinations.",
+            "additionalProperties": {
+                "type": "object",
+                "required": [
+                    "cmd"
+                ],
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Path to the GGUF file. Exposed as ${MODEL_PATH} macro."
+                    },
+                    "cmd": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Base command to run. Combine with parameterSets.args."
+                    },
+                    "cmdStop": {
+                        "type": "string",
+                        "default": "",
+                        "description": "Command to run to stop the model gracefully. Uses ${PID} macro."
+                    },
+                    "name": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 128
+                    },
+                    "description": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 1024
+                    },
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "pattern": "^[A-Z_][A-Z0-9_]*=.*$"
+                        },
+                        "default": []
+                    },
+                    "proxy": {
+                        "type": "string",
+                        "default": "http://localhost:${PORT}",
+                        "format": "uri"
+                    },
+                    "aliases": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "default": []
+                    },
+                    "checkEndpoint": {
+                        "type": "string",
+                        "default": "/health",
+                        "pattern": "^/.*$|^none$"
+                    },
+                    "ttl": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0
+                    },
+                    "useModelName": {
+                        "type": "string",
+                        "default": ""
+                    },
+                    "vramMb": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Optional VRAM hint in MB. Scheduler prefers llama-reported memory footprints."
+                    },
+                    "minVramMb": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0
+                    },
+                    "fitPolicy": {
+                        "type": "string",
+                        "description": "Scheduling policy for --fit usage. spill adds --fit, evict_to_fit avoids --fit and prefers GPU eviction, cpu_moe enables CPU offload for MoE.",
+                        "enum": [
+                            "",
+                            "spill",
+                            "evict_to_fit",
+                            "cpu_moe"
+                        ],
+                        "default": ""
+                    },
+                    "cpuMoe": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Sets --n-cpu-moe when fitPolicy is cpu_moe."
+                    },
+                    "filters": {
+                        "type": "object",
+                        "properties": {
+                            "stripParams": {
+                                "type": "string",
+                                "default": "",
+                                "pattern": "^[a-zA-Z0-9_, ]*$"
+                            },
+                            "setParams": {
+                                "type": "object",
+                                "additionalProperties": true,
+                                "default": {}
+                            }
+                        },
+                        "additionalProperties": false,
+                        "default": {}
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "default": {}
+                    },
+                    "concurrencyLimit": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0
+                    },
+                    "sendLoadingState": {
+                        "type": "boolean"
+                    },
+                    "unlisted": {
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "macros": {
+                        "$ref": "#/definitions/macros"
+                    }
+                }
+            }
+        },
+        "parameterSets": {
+            "type": "object",
+            "description": "Reusable parameter sets combined with modelSources to generate models.",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "args": {
+                        "type": "string",
+                        "description": "Arguments appended to the modelSources cmd."
+                    },
+                    "aliases": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "default": []
+                    },
+                    "env": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "pattern": "^[A-Z_][A-Z0-9_]*=.*$"
+                        },
+                        "default": []
+                    },
+                    "ttl": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0
+                    },
+                    "useModelName": {
+                        "type": "string",
+                        "default": ""
+                    },
+                    "vramMb": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Optional VRAM hint in MB. Scheduler prefers llama-reported memory footprints."
+                    },
+                    "minVramMb": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0
+                    },
+                    "fitPolicy": {
+                        "type": "string",
+                        "description": "Scheduling policy for --fit usage. spill adds --fit, evict_to_fit avoids --fit and prefers GPU eviction, cpu_moe enables CPU offload for MoE.",
+                        "enum": [
+                            "",
+                            "spill",
+                            "evict_to_fit",
+                            "cpu_moe"
+                        ],
+                        "default": ""
+                    },
+                    "cpuMoe": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Sets --n-cpu-moe when fitPolicy is cpu_moe."
+                    },
+                    "name": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 128
+                    },
+                    "description": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 1024
+                    },
+                    "filters": {
+                        "type": "object",
+                        "properties": {
+                            "stripParams": {
+                                "type": "string",
+                                "default": "",
+                                "pattern": "^[a-zA-Z0-9_, ]*$"
+                            },
+                            "setParams": {
+                                "type": "object",
+                                "additionalProperties": true,
+                                "default": {}
+                            }
+                        },
+                        "additionalProperties": false,
+                        "default": {}
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "additionalProperties": true,
+                        "default": {}
+                    },
+                    "concurrencyLimit": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0
+                    },
+                    "sendLoadingState": {
+                        "type": "boolean"
+                    },
+                    "unlisted": {
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "macros": {
+                        "$ref": "#/definitions/macros"
+                    }
+                }
+            }
+        },
         "models": {
             "type": "object",
-            "description": "A dictionary of model configurations. Each key is a model's ID. Model settings have defaults if not defined. The model's ID is available as ${MODEL_ID}.",
+            "description": "A dictionary of model configurations. Entries can override generated modelSources + parameterSets combinations. Each key is a model's ID. The model's ID is available as ${MODEL_ID}.",
             "additionalProperties": {
                 "type": "object",
                 "required": [
@@ -185,6 +433,35 @@
                         "type": "string",
                         "default": "",
                         "description": "Override the model name sent to upstream server. Useful if upstream expects a different name."
+                    },
+                    "vramMb": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Optional VRAM hint in MB. Scheduler prefers llama-reported memory footprints."
+                    },
+                    "minVramMb": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Extra VRAM buffer in MB added to vramMb when scheduling."
+                    },
+                    "fitPolicy": {
+                        "type": "string",
+                        "description": "Scheduling policy for --fit usage. spill adds --fit, evict_to_fit avoids --fit and prefers GPU eviction, cpu_moe enables CPU offload for MoE.",
+                        "enum": [
+                            "",
+                            "spill",
+                            "evict_to_fit",
+                            "cpu_moe"
+                        ],
+                        "default": ""
+                    },
+                    "cpuMoe": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Sets --n-cpu-moe when fitPolicy is cpu_moe."
                     },
                     "filters": {
                         "type": "object",

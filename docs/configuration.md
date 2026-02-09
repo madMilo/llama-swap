@@ -193,8 +193,33 @@ macros:
   # but they must be previously declared.
   "default_args": "--ctx-size ${default_ctx}"
 
+# modelSources + parameterSets: generate model combinations without repeating GGUF paths
+# - optional, leave empty to keep using explicit models below
+# - each generated model ID is <source_id>:<parameter_set_id>
+modelSources:
+  "llama3.1-8b-q4k":
+    path: /path/to/llama-3.1-8b-q4_k_m.gguf
+    cmd: |
+      ${latest-llama}
+      --model ${MODEL_PATH}
+      --log-format json
+      --port ${PORT}
+    name: "llama 3.1 8B Q4K"
+
+parameterSets:
+  "ctx8k-temp0.7":
+    args: |
+      --ctx-size 8192
+      --temperature 0.7
+    fitPolicy: spill
+    vramMb: 18000
+    minVramMb: 512
+
+# Generated model ID example:
+# - llama3.1-8b-q4k:ctx8k-temp0.7
+
 # models: a dictionary of model configurations
-# - required
+# - optional when modelSources + parameterSets are set
 # - each key is the model's ID, used in API requests
 # - model settings have default values that are used if they are not defined here
 # - the model's ID is available in the ${MODEL_ID} macro, also available in macros defined above
@@ -273,6 +298,27 @@ models:
     # - useful for when the upstream server expects a specific model name that
     #   is different from the model's ID
     useModelName: "qwen:qwq"
+
+    # vramMb: estimated VRAM usage in MB for scheduling decisions
+    # - optional, default: 0 (disabled)
+    # - for evict_to_fit, llama-swap prefers llama-reported memory from logs
+    #   and will return 503 if no footprint has been observed yet
+    vramMb: 18000
+
+    # minVramMb: extra VRAM buffer in MB added to vramMb during scheduling
+    # - optional, default: 0
+    minVramMb: 512
+
+    # fitPolicy: controls --fit behavior for scheduling
+    # - optional, default: ""
+    # - spill: add --fit to allow RAM spill
+    # - evict_to_fit: avoid --fit and evict other models until it fits
+    # - cpu_moe: add --fit and --n-cpu-moe for MoE models
+    fitPolicy: spill
+
+    # cpuMoe: number of MoE experts to offload to CPU when fitPolicy is cpu_moe
+    # - optional, default: 0
+    cpuMoe: 0
 
     # filters: a dictionary of filter settings
     # - optional, default: empty dictionary

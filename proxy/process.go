@@ -79,6 +79,18 @@ type Process struct {
 
 	// track the number of failed starts
 	failedStartCount int
+
+	assignedGPUMutex  sync.RWMutex
+	assignedGPU       int
+	runtimeEnv        []string
+	preStartHook      func(*Process) error
+	logCancel         context.CancelFunc
+	memoryTracker     *MemoryTracker
+	memorySignature   string
+	observedFootprint MemoryFootprint
+
+	GroupID        string
+	GroupExclusive bool
 }
 
 func NewProcess(ID string, healthCheckTimeout int, config config.ModelConfig, processLogger *LogMonitor, proxyLogger *LogMonitor) *Process {
@@ -124,7 +136,74 @@ func NewProcess(ID string, healthCheckTimeout int, config config.ModelConfig, pr
 		// stop timeout
 		gracefulStopTimeout: 10 * time.Second,
 		cmdWaitChan:         make(chan struct{}),
+		assignedGPU:         -1,
 	}
+}
+
+func (p *Process) SetPreStartHook(hook func(*Process) error) {
+	p.preStartHook = hook
+}
+
+func (p *Process) SetMemoryTracker(tracker *MemoryTracker, signature string) {
+	p.memoryTracker = tracker
+	p.memorySignature = signature
+	if p.logCancel != nil {
+		p.logCancel()
+		p.logCancel = nil
+	}
+	if tracker == nil || p.processLogger == nil || signature == "" {
+		return
+	}
+	p.logCancel = p.processLogger.OnLogData(func(data []byte) {
+		for _, line := range strings.Split(string(data), "\n") {
+			if footprint, ok := tracker.ObserveLog(signature, line); ok {
+				p.observedFootprint = footprint
+			}
+		}
+	})
+}
+
+func (p *Process) SetRuntimeEnv(env []string) {
+	p.assignedGPUMutex.Lock()
+	defer p.assignedGPUMutex.Unlock()
+	p.runtimeEnv = env
+}
+
+func (p *Process) SetAssignedGPU(index int) {
+	p.assignedGPUMutex.Lock()
+	defer p.assignedGPUMutex.Unlock()
+	p.assignedGPU = index
+}
+
+func (p *Process) AssignedGPU() int {
+	p.assignedGPUMutex.RLock()
+	defer p.assignedGPUMutex.RUnlock()
+	return p.assignedGPU
+}
+
+func (p *Process) LastRequestHandled() time.Time {
+	return p.getLastRequestHandled()
+}
+
+func (p *Process) InFlightRequestsCount() int32 {
+	return p.inFlightRequestsCount.Load()
+}
+
+func (p *Process) FitPolicy() string {
+	return p.config.FitPolicy
+}
+
+func (p *Process) MeasuredVramMB() uint64 {
+	if p.memoryTracker == nil || p.memorySignature == "" {
+		if p.observedFootprint.VramMB > 0 {
+			return p.observedFootprint.VramMB
+		}
+		return 0
+	}
+	if footprint, ok := p.memoryTracker.Get(p.memorySignature); ok && footprint.VramMB > 0 {
+		return footprint.VramMB
+	}
+	return p.observedFootprint.VramMB
 }
 
 // LogMonitor returns the log monitor associated with the process.
@@ -250,10 +329,24 @@ func (p *Process) start() error {
 	defer p.waitStarting.Done()
 	cmdContext, ctxCancelUpstream := context.WithCancel(context.Background())
 
+	if p.preStartHook != nil {
+		if err := p.preStartHook(p); err != nil {
+			if curState, swapErr := p.swapState(StateStarting, StateStopped); swapErr != nil {
+				p.forceState(StateStopped)
+				return fmt.Errorf("pre-start hook failed and state swap failed: %v (state: %v)", err, curState)
+			}
+			return err
+		}
+	}
+
 	p.cmd = exec.CommandContext(cmdContext, args[0], args[1:]...)
 	p.cmd.Stdout = p.processLogger
 	p.cmd.Stderr = p.processLogger
+	p.assignedGPUMutex.RLock()
+	runtimeEnv := append([]string{}, p.runtimeEnv...)
+	p.assignedGPUMutex.RUnlock()
 	p.cmd.Env = append(p.cmd.Environ(), p.config.Env...)
+	p.cmd.Env = append(p.cmd.Env, runtimeEnv...)
 	p.cmd.Cancel = p.cmdStopUpstreamProcess
 	p.cmd.WaitDelay = p.gracefulStopTimeout
 	setProcAttributes(p.cmd)
@@ -391,6 +484,8 @@ func (p *Process) StopImmediately() {
 		return
 	}
 
+	p.SetAssignedGPU(-1)
+	p.SetRuntimeEnv(nil)
 	p.stopCommand()
 }
 
@@ -403,6 +498,8 @@ func (p *Process) Shutdown() {
 		return
 	}
 
+	p.SetAssignedGPU(-1)
+	p.SetRuntimeEnv(nil)
 	p.stopCommand()
 	// just force it to this state since there is no recovery from shutdown
 	p.forceState(StateShutdown)
@@ -531,7 +628,11 @@ func (p *Process) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 				// the goroutine can write its cleanup messages, causing incomplete SSE output.
 				srw.waitForCompletion(100 * time.Millisecond)
 			} else {
-				http.Error(w, errstr, http.StatusBadGateway)
+				statusCode := http.StatusBadGateway
+				if errors.Is(err, ErrInsufficientVRAM) || errors.Is(err, ErrUnknownFootprint) {
+					statusCode = http.StatusServiceUnavailable
+				}
+				http.Error(w, errstr, statusCode)
 			}
 			return
 		}

@@ -15,6 +15,10 @@ type ModelConfig struct {
 	UnloadAfter   int      `yaml:"ttl"`
 	Unlisted      bool     `yaml:"unlisted"`
 	UseModelName  string   `yaml:"useModelName"`
+	VramMB        int      `yaml:"vramMb"`
+	MinVramMB     int      `yaml:"minVramMb"`
+	FitPolicy     string   `yaml:"fitPolicy"`
+	CpuMoe        int      `yaml:"cpuMoe"`
 
 	// #179 for /v1/models
 	Name        string `yaml:"name"`
@@ -38,9 +42,8 @@ type ModelConfig struct {
 	SendLoadingState *bool `yaml:"sendLoadingState"`
 }
 
-func (m *ModelConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type rawModelConfig ModelConfig
-	defaults := rawModelConfig{
+func DefaultModelConfig() ModelConfig {
+	defaults := ModelConfig{
 		Cmd:              "",
 		CmdStop:          "",
 		Proxy:            "http://localhost:${PORT}",
@@ -50,15 +53,25 @@ func (m *ModelConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		UnloadAfter:      0,
 		Unlisted:         false,
 		UseModelName:     "",
+		VramMB:           0,
+		MinVramMB:        0,
+		FitPolicy:        "",
+		CpuMoe:           0,
 		ConcurrencyLimit: 0,
 		Name:             "",
 		Description:      "",
 	}
 
-	// the default cmdStop to taskkill /f /t /pid ${PID}
 	if runtime.GOOS == "windows" {
 		defaults.CmdStop = "taskkill /f /t /pid ${PID}"
 	}
+
+	return defaults
+}
+
+func (m *ModelConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type rawModelConfig ModelConfig
+	defaults := rawModelConfig(DefaultModelConfig())
 
 	if err := unmarshal(&defaults); err != nil {
 		return err
