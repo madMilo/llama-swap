@@ -26,15 +26,6 @@ jobs:
           ref: ${{ github.event.inputs.tag || github.ref }}
       - name: Set up Go
         uses: actions/setup-go@v5
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - name: Install dependencies and build UI
-        run: |
-          cd ui-svelte
-          npm ci
-          npm run build
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6

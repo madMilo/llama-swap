@@ -139,7 +139,7 @@ Binaries are available on the [release](https://github.com/mostlygeek/llama-swap
 
 ### Building from source
 
-1. Building requires Go and Node.js (for UI).
+1. Building requires Go.
 1. `git clone https://github.com/mostlygeek/llama-swap.git`
 1. `make clean all`
 1. look in the `build/` subdirectory for the llama-swap binary
