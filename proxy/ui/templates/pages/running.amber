@@ -1,0 +1,14 @@
+extends ../layouts/base
+
+block title
+  | Running · Llama Swap
+
+block content
+  div.section-header
+    h1 Running processes
+    div.section-actions
+      a.topcoat-button[href="/ui/running"][data-htmz-get="/ui/partials/running"][data-htmz-target="#running-list"] Refresh list
+      a.topcoat-button.topcoat-button--cta[href="/unload"] Stop all
+  p.page-description Active upstream processes managed by llama-swap.
+  div#running-list
+    import ../partials/running

@@ -6,19 +6,25 @@ import (
 	"net/http"
 )
 
-//go:embed ui_dist
-var reactStaticFS embed.FS
+//go:embed ui/static ui/templates
+var uiFS embed.FS
 
-// GetReactFS returns the embedded React filesystem
-func GetReactFS() (http.FileSystem, error) {
-	subFS, err := fs.Sub(reactStaticFS, "ui_dist")
+func GetUIStaticFS() (http.FileSystem, error) {
+	subFS, err := fs.Sub(uiFS, "ui/static")
 	if err != nil {
 		return nil, err
 	}
 	return http.FS(subFS), nil
 }
 
-// GetReactIndexHTML returns the main index.html for the React app
-func GetReactIndexHTML() ([]byte, error) {
-	return reactStaticFS.ReadFile("ui_dist/index.html")
+func readUITemplate(path string) ([]byte, error) {
+	return uiFS.ReadFile(path)
+}
+
+func readUIStatic(path string) ([]byte, error) {
+	return uiFS.ReadFile("ui/static/" + path)
+}
+
+func uiVirtualFS() http.FileSystem {
+	return http.FS(uiFS)
 }

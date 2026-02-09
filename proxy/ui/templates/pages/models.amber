@@ -1,0 +1,14 @@
+extends ../layouts/base
+
+block title
+  | Models · Llama Swap
+
+block content
+  div.section-header
+    h1 Models
+    div.section-actions
+      a.topcoat-button[href="/ui/models"][data-htmz-get="/ui/partials/models"][data-htmz-target="#models-list"] Refresh list
+      a.topcoat-button.topcoat-button--cta[href="/upstream"] Open upstream
+  p.page-description Available models and their configured metadata.
+  div#models-list
+    import ../partials/models

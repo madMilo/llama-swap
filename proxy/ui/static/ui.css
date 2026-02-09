@@ -1,0 +1,56 @@
+main {
+  padding: 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.section-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.page-description {
+  margin: 0.5rem 0 1.25rem;
+  color: var(--topcoat-muted);
+}
+
+.footer {
+  padding: 1rem 1.5rem 2rem;
+  color: var(--topcoat-muted);
+  font-size: 0.85rem;
+}
+
+.pre-block {
+  background: #111827;
+  color: #e5e7eb;
+  padding: 1rem;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+}
+
+.badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.empty-state {
+  padding: 1.5rem;
+  text-align: center;
+}
