@@ -117,6 +117,14 @@ func NewProcess(ID string, healthCheckTimeout int, config config.ModelConfig, pr
 		}
 	}
 
+	observedFootprint := MemoryFootprint{
+		VramMB: config.InitialVramMB,
+		CpuMB:  config.InitialCpuMB,
+	}
+	if observedFootprint.VramMB > 0 || observedFootprint.CpuMB > 0 {
+		observedFootprint.RecordedAt = time.Now()
+	}
+
 	return &Process{
 		ID:                      ID,
 		config:                  config,
@@ -137,6 +145,7 @@ func NewProcess(ID string, healthCheckTimeout int, config config.ModelConfig, pr
 		gracefulStopTimeout: 10 * time.Second,
 		cmdWaitChan:         make(chan struct{}),
 		assignedGPU:         -1,
+		observedFootprint:   observedFootprint,
 	}
 }
 

@@ -104,6 +104,18 @@ func buildGeneratedModelConfig(sourceID, paramID string, source ModelSourceConfi
 	if param.CpuMoe > 0 {
 		model.CpuMoe = param.CpuMoe
 	}
+	if source.InitialVramMB > 0 {
+		model.InitialVramMB = source.InitialVramMB
+	}
+	if param.InitialVramMB > 0 {
+		model.InitialVramMB = param.InitialVramMB
+	}
+	if source.InitialCpuMB > 0 {
+		model.InitialCpuMB = source.InitialCpuMB
+	}
+	if param.InitialCpuMB > 0 {
+		model.InitialCpuMB = param.InitialCpuMB
+	}
 
 	if source.ConcurrencyLimit > 0 {
 		model.ConcurrencyLimit = source.ConcurrencyLimit
@@ -205,6 +217,12 @@ func mergeModelConfig(base, override ModelConfig) ModelConfig {
 	}
 	if override.CpuMoe > 0 {
 		merged.CpuMoe = override.CpuMoe
+	}
+	if override.InitialVramMB > 0 {
+		merged.InitialVramMB = override.InitialVramMB
+	}
+	if override.InitialCpuMB > 0 {
+		merged.InitialCpuMB = override.InitialCpuMB
 	}
 	if override.ConcurrencyLimit > 0 {
 		merged.ConcurrencyLimit = override.ConcurrencyLimit

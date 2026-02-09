@@ -216,6 +216,18 @@
                         "default": 0,
                         "description": "Sets --n-cpu-moe when fitPolicy is cpu_moe."
                     },
+                    "initialVramMB": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Initial VRAM usage hint in MB. Used until actual measurements are observed."
+                    },
+                    "initialCpuMB": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Initial CPU/RAM usage hint in MB. Used until actual measurements are observed."
+                    },
                     "filters": {
                         "type": "object",
                         "properties": {
@@ -307,6 +319,18 @@
                         "minimum": 0,
                         "default": 0,
                         "description": "Sets --n-cpu-moe when fitPolicy is cpu_moe."
+                    },
+                    "initialVramMB": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Initial VRAM usage hint in MB. Used until actual measurements are observed."
+                    },
+                    "initialCpuMB": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Initial CPU/RAM usage hint in MB. Used until actual measurements are observed."
                     },
                     "name": {
                         "type": "string",
@@ -449,6 +473,18 @@
                         "minimum": 0,
                         "default": 0,
                         "description": "Sets --n-cpu-moe when fitPolicy is cpu_moe."
+                    },
+                    "initialVramMB": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Initial VRAM usage hint in MB. Used until actual measurements are observed."
+                    },
+                    "initialCpuMB": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "description": "Initial CPU/RAM usage hint in MB. Used until actual measurements are observed."
                     },
                     "filters": {
                         "type": "object",

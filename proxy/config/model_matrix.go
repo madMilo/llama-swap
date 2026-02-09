@@ -13,6 +13,8 @@ type ModelSourceConfig struct {
 	UseModelName     string         `yaml:"useModelName"`
 	FitPolicy        string         `yaml:"fitPolicy"`
 	CpuMoe           int            `yaml:"cpuMoe"`
+	InitialVramMB    uint64         `yaml:"initialVramMB"`
+	InitialCpuMB     uint64         `yaml:"initialCpuMB"`
 	Name             string         `yaml:"name"`
 	Description      string         `yaml:"description"`
 	ConcurrencyLimit int            `yaml:"concurrencyLimit"`
@@ -31,6 +33,8 @@ type ParameterSetConfig struct {
 	UseModelName     string         `yaml:"useModelName"`
 	FitPolicy        string         `yaml:"fitPolicy"`
 	CpuMoe           int            `yaml:"cpuMoe"`
+	InitialVramMB    uint64         `yaml:"initialVramMB"`
+	InitialCpuMB     uint64         `yaml:"initialCpuMB"`
 	Name             string         `yaml:"name"`
 	Description      string         `yaml:"description"`
 	ConcurrencyLimit int            `yaml:"concurrencyLimit"`

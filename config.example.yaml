@@ -248,6 +248,13 @@ models:
     # - optional, default: 0
     cpuMoe: 0
 
+    # initialVramMB: initial VRAM usage hint in MB
+    # initialCpuMB: initial CPU/RAM usage hint in MB
+    # - optional, default: 0
+    # - used until actual measurements are observed from logs
+    initialVramMB: 0
+    initialCpuMB: 0
+
     # filters: a dictionary of filter settings
     # - optional, default: empty dictionary
     # - same capabilities as peer filters (stripParams, setParams)
