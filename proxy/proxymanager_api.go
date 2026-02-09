@@ -14,12 +14,17 @@ import (
 )
 
 type Model struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	State       string `json:"state"`
-	Unlisted    bool   `json:"unlisted"`
-	PeerID      string `json:"peerID"`
+	Id              string `json:"id"`
+	Name            string `json:"name"`
+	Description     string `json:"description"`
+	State           string `json:"state"`
+	Unlisted        bool   `json:"unlisted"`
+	PeerID          string `json:"peerID"`
+	MeasuredVramMB  uint64 `json:"measuredVramMB,omitempty"`
+	MeasuredCpuMB   uint64 `json:"measuredCpuMB,omitempty"`
+	FitPolicy       string `json:"fitPolicy,omitempty"`
+	InitialVramMB   uint64 `json:"initialVramMB,omitempty"`
+	InitialCpuMB    uint64 `json:"initialCpuMB,omitempty"`
 }
 
 func addApiHandlers(pm *ProxyManager) {
@@ -56,9 +61,13 @@ func (pm *ProxyManager) getModelStatus() []Model {
 		// Get process state
 		processGroup := pm.findGroupByModelName(modelID)
 		state := "unknown"
+		var measuredVramMB uint64
+		var measuredCpuMB uint64
 		if processGroup != nil {
 			process := processGroup.processes[modelID]
 			if process != nil {
+				measuredVramMB = process.MeasuredVramMB()
+				measuredCpuMB = process.MeasuredCpuMB()
 				var stateStr string
 				switch process.CurrentState() {
 				case StateReady:
@@ -78,11 +87,16 @@ func (pm *ProxyManager) getModelStatus() []Model {
 			}
 		}
 		models = append(models, Model{
-			Id:          modelID,
-			Name:        pm.config.Models[modelID].Name,
-			Description: pm.config.Models[modelID].Description,
-			State:       state,
-			Unlisted:    pm.config.Models[modelID].Unlisted,
+			Id:             modelID,
+			Name:           pm.config.Models[modelID].Name,
+			Description:    pm.config.Models[modelID].Description,
+			State:          state,
+			Unlisted:       pm.config.Models[modelID].Unlisted,
+			MeasuredVramMB: measuredVramMB,
+			MeasuredCpuMB:  measuredCpuMB,
+			FitPolicy:      pm.config.Models[modelID].FitPolicy,
+			InitialVramMB:  pm.config.Models[modelID].InitialVramMB,
+			InitialCpuMB:   pm.config.Models[modelID].InitialCpuMB,
 		})
 	}
 

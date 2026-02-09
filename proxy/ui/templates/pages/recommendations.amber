@@ -1,0 +1,13 @@
+extends ../layouts/base
+
+block title
+  | Recommendations · Llama Swap
+
+block content
+  div.section-header
+    h1 Recommendations
+    div.section-actions
+      a.topcoat-button[href="/ui/recommendations"][data-htmz-get="/ui/partials/recommendations"][data-htmz-target="#recommendations-content"] Refresh list
+  p.page-description Review measured footprints and fit recommendations based on observed memory usage.
+  div#recommendations-content
+    import ../partials/recommendations

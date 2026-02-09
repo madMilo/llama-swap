@@ -1,0 +1,54 @@
+if RecommendationNotes != nil && len(RecommendationNotes) > 0
+  div.topcoat-card
+    h2 Recommendations
+    ul
+      each $note in RecommendationNotes
+        li #{$note}
+
+if RecommendationModels != nil && len(RecommendationModels) > 0
+  div.topcoat-card
+    table.activity-table.recommendations-table
+      thead
+        tr
+          th Model
+          th Initial VRAM
+          th Measured VRAM
+          th Δ VRAM
+          th Initial CPU
+          th Measured CPU
+          th Δ CPU
+          th Fit policy
+          th Recommended fit
+      tbody
+        each $model in RecommendationModels
+          tr
+            td
+              if $model.Name != ""
+                div #{$model.Name}
+                div.topcoat-muted #{$model.ID}
+              else
+                | #{$model.ID}
+            td #{$model.InitialVramMB}
+            td #{$model.MeasuredVramMB}
+            if $model.HighlightVramDelta
+              td.recommendations-mismatch #{$model.VramDeltaMB}
+            else
+              td #{$model.VramDeltaMB}
+            td #{$model.InitialCpuMB}
+            td #{$model.MeasuredCpuMB}
+            if $model.HighlightCpuDelta
+              td.recommendations-mismatch #{$model.CpuDeltaMB}
+            else
+              td #{$model.CpuDeltaMB}
+            td
+              if $model.FitPolicy != ""
+                | #{$model.FitPolicy}
+              else
+                span.topcoat-muted —
+            td
+              div #{$model.Recommendation}
+              if $model.RecommendationNote != ""
+                div.topcoat-muted #{$model.RecommendationNote}
+else
+  div.topcoat-card.empty-state
+    p.topcoat-muted No measured footprints yet. Start a model to collect measurements.
