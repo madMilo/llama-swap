@@ -9,6 +9,8 @@ Key points:
 - **Initial usage hints**: set `initialVramMB` to 95% of available VRAM (single GPU or dual GPU). For `glm-4.7-dual` and `deepseek-v3-dual`, also set `initialCpuMB: 245760` (240GB) so the scheduler understands the large RAM needs from the start.
 
 > Note: Replace `/models` with the path where your GGUF files live. The container binds it to `/models`.
+>
+> Docker GPU selection: llama-swap injects `CUDA_VISIBLE_DEVICES` for **single-GPU** scheduling. To make that available inside the container, pass `-e CUDA_VISIBLE_DEVICES` and use `--gpus all`. For **dual-GPU** models, set `CUDA_VISIBLE_DEVICES=0,1` explicitly in the model config and still use `--gpus all`.
 
 ## Example configuration
 
@@ -33,8 +35,9 @@ models:
     initialVramMB: 23347
     initialCpuMB: 0
     cmd: >
-      docker run --rm --gpus "device=0"
+      docker run --rm --gpus all
         -e LLAMA_SET_ROWS=1
+        -e CUDA_VISIBLE_DEVICES
         -v /models:/models
         -p ${PORT}:${PORT}
         ghcr.io/ggml-org/llama.cpp:full-cuda
@@ -56,8 +59,9 @@ models:
     initialVramMB: 23347
     initialCpuMB: 0
     cmd: >
-      docker run --rm --gpus "device=0"
+      docker run --rm --gpus all
         -e LLAMA_SET_ROWS=1
+        -e CUDA_VISIBLE_DEVICES
         -v /models:/models
         -p ${PORT}:${PORT}
         ghcr.io/ggml-org/llama.cpp:full-cuda
@@ -82,8 +86,9 @@ models:
     initialVramMB: 23347
     initialCpuMB: 0
     cmd: >
-      docker run --rm --gpus "device=1"
+      docker run --rm --gpus all
         -e LLAMA_SET_ROWS=1
+        -e CUDA_VISIBLE_DEVICES
         -v /models:/models
         -p ${PORT}:${PORT}
         ghcr.io/ggml-org/llama.cpp:full-cuda
@@ -104,8 +109,9 @@ models:
     initialVramMB: 23347
     initialCpuMB: 0
     cmd: >
-      docker run --rm --gpus "device=1"
+      docker run --rm --gpus all
         -e LLAMA_SET_ROWS=1
+        -e CUDA_VISIBLE_DEVICES
         -v /models:/models
         -p ${PORT}:${PORT}
         ghcr.io/ggml-org/llama.cpp:full-cuda
@@ -130,8 +136,9 @@ models:
     initialVramMB: 46759
     initialCpuMB: 0
     cmd: >
-      docker run --rm --gpus "device=0,1"
+      docker run --rm --gpus all
         -e LLAMA_SET_ROWS=1
+        -e CUDA_VISIBLE_DEVICES=0,1
         -v /models:/models
         -p ${PORT}:${PORT}
         ghcr.io/ggml-org/llama.cpp:full-cuda
@@ -154,8 +161,9 @@ models:
     initialVramMB: 46759
     initialCpuMB: 0
     cmd: >
-      docker run --rm --gpus "device=0,1"
+      docker run --rm --gpus all
         -e LLAMA_SET_ROWS=1
+        -e CUDA_VISIBLE_DEVICES=0,1
         -v /models:/models
         -p ${PORT}:${PORT}
         ghcr.io/ggml-org/llama.cpp:full-cuda
@@ -177,8 +185,9 @@ models:
     initialVramMB: 46759
     initialCpuMB: 245760
     cmd: >
-      docker run --rm --gpus "device=0,1"
+      docker run --rm --gpus all
         -e LLAMA_SET_ROWS=1
+        -e CUDA_VISIBLE_DEVICES=0,1
         -v /models:/models
         -p ${PORT}:${PORT}
         ghcr.io/ggml-org/llama.cpp:full-cuda
@@ -200,8 +209,9 @@ models:
     initialVramMB: 46759
     initialCpuMB: 245760
     cmd: >
-      docker run --rm --gpus "device=0,1"
+      docker run --rm --gpus all
         -e LLAMA_SET_ROWS=1
+        -e CUDA_VISIBLE_DEVICES=0,1
         -v /models:/models
         -p ${PORT}:${PORT}
         ghcr.io/ggml-org/llama.cpp:full-cuda
