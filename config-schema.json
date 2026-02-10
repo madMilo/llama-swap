@@ -385,6 +385,11 @@
         "models": {
             "type": "object",
             "description": "A dictionary of model configurations. Entries can override generated modelSources + parameterSets combinations. Each key is a model's ID. The model's ID is available as ${MODEL_ID}.",
+            "propertyNames": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": ".*\\S.*"
+            },
             "additionalProperties": {
                 "type": "object",
                 "required": [

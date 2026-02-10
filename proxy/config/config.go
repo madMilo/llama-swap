@@ -232,6 +232,22 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 		return Config{}, err
 	}
 
+	normalizedModels := make(map[string]ModelConfig, len(config.Models))
+	for modelID, modelConfig := range config.Models {
+		cleanID := strings.TrimSpace(modelID)
+		if cleanID == "" {
+			return Config{}, fmt.Errorf("models key cannot be empty")
+		}
+		if cleanID != modelID {
+			return Config{}, fmt.Errorf("model id %q must not contain leading or trailing whitespace", modelID)
+		}
+		if _, exists := normalizedModels[cleanID]; exists {
+			return Config{}, fmt.Errorf("duplicate model id after normalization: %s", cleanID)
+		}
+		normalizedModels[cleanID] = modelConfig
+	}
+	config.Models = normalizedModels
+
 	// Populate the aliases map
 	config.aliases = make(map[string]string)
 	for modelName, modelConfig := range config.Models {

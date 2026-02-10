@@ -65,6 +65,36 @@ models:
 	assert.Contains(t, err.Error(), "duplicate alias m1 found in model: model")
 }
 
+func TestConfig_ModelIDValidation(t *testing.T) {
+	t.Run("rejects empty model keys", func(t *testing.T) {
+		content := `
+models:
+  "":
+    cmd: path/to/cmd --arg1 one
+    proxy: "http://localhost:8080"
+`
+		_, err := LoadConfigFromReader(strings.NewReader(content))
+		if !assert.Error(t, err) {
+			t.FailNow()
+		}
+		assert.Contains(t, err.Error(), "models key cannot be empty")
+	})
+
+	t.Run("rejects non-normalized model keys", func(t *testing.T) {
+		content := `
+models:
+  " model1 ":
+    cmd: path/to/cmd --arg1 one
+    proxy: "http://localhost:8080"
+`
+		_, err := LoadConfigFromReader(strings.NewReader(content))
+		if !assert.Error(t, err) {
+			t.FailNow()
+		}
+		assert.Contains(t, err.Error(), "must not contain leading or trailing whitespace")
+	})
+}
+
 func TestConfig_FindConfig(t *testing.T) {
 
 	// TODO?
