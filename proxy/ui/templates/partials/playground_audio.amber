@@ -1,4 +1,4 @@
-div.topcoat-card.playground-card
+div.topcoat-card.playground-card[data-testid="playground-audio"]
   div
     h2 Audio transcription
     p.topcoat-muted Endpoint: POST /v1/audio/transcriptions.
@@ -14,5 +14,8 @@ div.topcoat-card.playground-card
       input#playground-audio-file.playground-input[type="file"][accept=".mp3,.wav"]
       span.playground-helper Accepted formats: MP3, WAV (max 25MB).
   div.playground-inline
-    a.topcoat-button[href="/ui/playground?tab=audio"][data-htmz-get="/ui/partials/playground/audio"][data-htmz-target="#playground-content"] Refresh transcription tab
+    if PlaygroundMock
+      a.topcoat-button[href="/ui/playground?tab=audio&mock=1"][data-htmz-get="/ui/partials/playground/audio?mock=1"][data-htmz-target="#playground-content"] Refresh transcription tab
+    else
+      a.topcoat-button[href="/ui/playground?tab=audio"][data-htmz-get="/ui/partials/playground/audio"][data-htmz-target="#playground-content"] Refresh transcription tab
     span.playground-helper Transcriptions return JSON with a text field.
