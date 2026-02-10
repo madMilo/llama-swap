@@ -35,6 +35,13 @@ type UIModel struct {
 	Unlisted    bool
 }
 
+type UIPeerModel struct {
+	PeerID    string
+	ModelID   string
+	Endpoint  string
+	Available bool
+}
+
 type UIRecommendationModel struct {
 	ID                 string
 	Name               string
@@ -99,6 +106,7 @@ type UIPageData struct {
 	StatsOutputTokens          int
 	StatsAvgSpeed              string
 	StatsHistogramSVG          string
+	PeerModels                 []UIPeerModel
 }
 
 func (pm *ProxyManager) uiIndexHandler(c *gin.Context) {
@@ -108,6 +116,7 @@ func (pm *ProxyManager) uiIndexHandler(c *gin.Context) {
 func (pm *ProxyManager) uiModelsPageHandler(c *gin.Context) {
 	data := pm.uiPageData("/ui/models")
 	data.Models = pm.uiModelsList()
+	data.PeerModels = pm.uiPeerModelsList()
 	pm.renderUITemplate(c, "pages/models", data)
 }
 
@@ -149,6 +158,7 @@ func (pm *ProxyManager) uiRecommendationsPageHandler(c *gin.Context) {
 func (pm *ProxyManager) uiModelsPartialHandler(c *gin.Context) {
 	data := pm.uiPageData("/ui/models")
 	data.Models = pm.uiModelsList()
+	data.PeerModels = pm.uiPeerModelsList()
 	pm.renderUITemplate(c, "partials/models", data)
 }
 
@@ -522,23 +532,41 @@ func (pm *ProxyManager) uiModelsList() []UIModel {
 		})
 	}
 
-	if pm.peerProxy != nil {
-		for peerID, peer := range pm.peerProxy.ListPeers() {
-			for _, modelID := range peer.Models {
-				models = append(models, UIModel{
-					ID:     modelID,
-					Name:   fmt.Sprintf("%s: %s", peerID, modelID),
-					Source: fmt.Sprintf("peer:%s", peerID),
-				})
-			}
-		}
-	}
+	// Note: Peer models are now shown separately in the peers section
+	// and are no longer mixed with local models
 
 	sort.Slice(models, func(i, j int) bool {
 		return models[i].ID < models[j].ID
 	})
 
 	return models
+}
+
+func (pm *ProxyManager) uiPeerModelsList() []UIPeerModel {
+	if pm.peerProxy == nil {
+		return nil
+	}
+
+	peerModels := make([]UIPeerModel, 0)
+	for peerID, peer := range pm.peerProxy.ListPeers() {
+		for _, modelID := range peer.Models {
+			peerModels = append(peerModels, UIPeerModel{
+				PeerID:    peerID,
+				ModelID:   modelID,
+				Endpoint:  peer.Proxy,
+				Available: true, // Assume available if listed
+			})
+		}
+	}
+
+	sort.Slice(peerModels, func(i, j int) bool {
+		if peerModels[i].PeerID == peerModels[j].PeerID {
+			return peerModels[i].ModelID < peerModels[j].ModelID
+		}
+		return peerModels[i].PeerID < peerModels[j].PeerID
+	})
+
+	return peerModels
 }
 
 func (pm *ProxyManager) uiRunningList() []UIRunningProcess {

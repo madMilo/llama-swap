@@ -1,0 +1,22 @@
+if len(PeerModels) > 0
+  div.topcoat-card[style="margin-top: 1.5rem;"]
+    h2 Peer Models
+    p.topcoat-muted Models available from configured peer servers.
+    table.topcoat-table
+      thead
+        tr
+          th Peer ID
+          th Model ID
+          th Endpoint
+          th Status
+      tbody
+        each $peer in PeerModels
+          tr
+            td #{$peer.PeerID}
+            td #{$peer.ModelID}
+            td #{$peer.Endpoint}
+            td
+              if $peer.Available
+                span.topcoat-label[style="background: #059669; color: white;"] Available
+              else
+                span.topcoat-label[style="background: #6b7280; color: white;"] Unknown

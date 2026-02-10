@@ -12,3 +12,4 @@ block content
   p.page-description Available models and their configured metadata.
   div#models-list
     import ../partials/models
+    import ../partials/peers
