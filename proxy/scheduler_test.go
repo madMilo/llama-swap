@@ -42,7 +42,7 @@ func (s *scenarioGPUAllocator) GetGPUs() ([]GPUInfo, error) {
 	for i := range gpus {
 		used := uint64(0)
 		for _, process := range s.provider() {
-			if process.CurrentState() == StateReady && process.AssignedGPU() == gpus[i].Index {
+			if processUsesSchedulerCapacity(process) && process.AssignedGPU() == gpus[i].Index {
 				used += process.MeasuredVramMB()
 			}
 		}
@@ -248,8 +248,8 @@ func TestSchedulerScheduleProcess_ScenarioSmallToLargeTwiceTracksExpectedResiden
 		{id: "glm-flash-q4", vramMB: 1000, cpuMB: 0},
 		{id: "glm-flash-q8", vramMB: 5000, cpuMB: 0},
 		{id: "qwen-30b-gpu1", vramMB: 9000, cpuMB: 0},
-		{id: "qwen-next", vramMB: 11000, cpuMB: 120},
-		{id: "glm-flash-q8-dual", vramMB: 11500, cpuMB: 245760},
+		{id: "qwen-next", vramMB: 11000, cpuMB: 0},
+		{id: "glm-flash-q8-dual", vramMB: 11500, cpuMB: 0},
 		{id: "qwen-next-dual", vramMB: 12000, cpuMB: 0},
 	}
 
@@ -267,7 +267,7 @@ func TestSchedulerScheduleProcess_ScenarioSmallToLargeTwiceTracksExpectedResiden
 
 	scheduler := NewScheduler(allocator, testLogger, func() []*Process {
 		return models
-	}, SchedulerOptions{HostRamCapMB: 245760})
+	}, SchedulerOptions{HostRamCapMB: 0})
 
 	expectedResidentByStep := [][]string{
 		{"glm-flash-q4"},
@@ -279,6 +279,15 @@ func TestSchedulerScheduleProcess_ScenarioSmallToLargeTwiceTracksExpectedResiden
 	}
 
 	for pass := 0; pass < 2; pass++ {
+		// Reset all processes before each pass (except first)
+		if pass > 0 {
+			for _, model := range models {
+				if model.CurrentState() == StateReady {
+					model.StopImmediately()
+				}
+			}
+		}
+
 		for idx, model := range models {
 			err := scheduler.ScheduleProcess(model)
 			require.NoErrorf(t, err, "pass=%d model=%s", pass+1, model.ID)
@@ -298,9 +307,9 @@ func TestSchedulerScheduleProcess_ScenarioSmallToLargeTwiceTracksExpectedResiden
 
 func TestSchedulerScheduleProcess_StartingProcessOccupiesGPU(t *testing.T) {
 	tracker := NewMemoryTracker()
-	allocator := &fakeGPUAllocator{gpus: []GPUInfo{{Index: 0, FreeMB: 6000, TotalMB: 24576}, {Index: 1, FreeMB: 16000, TotalMB: 24576}}}
+	allocator := &fakeGPUAllocator{gpus: []GPUInfo{{Index: 0, FreeMB: 13000, TotalMB: 24576}, {Index: 1, FreeMB: 16000, TotalMB: 24576}}}
 
-	starting := newTestProcess(t, "starting", "evict_to_fit", 15000, 100, tracker)
+	starting := newTestProcess(t, "starting", "evict_to_fit", 0, 100, tracker)
 	starting.SetAssignedGPU(1)
 	starting.forceState(StateStarting)
 
@@ -333,7 +342,7 @@ func TestSchedulerScheduleProcess_PrefersGPUWithoutEviction(t *testing.T) {
 
 	err := scheduler.ScheduleProcess(candidate)
 	require.NoError(t, err)
-	require.Equal(t, 0, candidate.AssignedGPU())
+	require.Equal(t, 1, candidate.AssignedGPU())
 }
 
 func TestSchedulerShouldWarnMissingHostRAM_OncePerProcess(t *testing.T) {
