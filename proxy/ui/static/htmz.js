@@ -1,4 +1,29 @@
 (function () {
+  function readResponseSnippet(resp) {
+    return resp
+      .text()
+      .then(function (body) {
+        if (!body) return "";
+        return body.slice(0, 200);
+      })
+      .catch(function () {
+        return "";
+      });
+  }
+
+  function throwHttpError(method, url, resp) {
+    return readResponseSnippet(resp).then(function (snippet) {
+      var details = method + " " + url + " failed with status " + resp.status;
+      if (snippet) {
+        details += ": " + snippet;
+      }
+
+      var error = new Error(details);
+      error.userMessage = "Operation failed. Please try again.";
+      throw error;
+    });
+  }
+
   function htmzFetch(element) {
     var url = element.getAttribute("data-htmz-get");
     if (!url) return;
@@ -27,7 +52,7 @@
       headers: { "Content-Type": "application/json" }
     })
       .then(function (resp) {
-        if (!resp.ok) throw new Error("htmz POST failed");
+        if (!resp.ok) return throwHttpError("POST", url, resp);
         if (swap === "none") return "";
         return resp.text();
       })
@@ -132,7 +157,7 @@
         headers: { "Content-Type": "application/json" }
       })
         .then(function (resp) {
-          if (!resp.ok) throw new Error("htmz POST failed");
+          if (!resp.ok) return throwHttpError("POST", url, resp);
 
           // Show success toast for model operations
           if (url.includes('/api/models/load/')) {
@@ -153,8 +178,8 @@
           }
         })
         .catch(function (err) {
-          console.error("htmz POST error:", err);
-          showToast("Operation failed: " + err.message, "error");
+          console.error("htmz POST error:", err && err.message ? err.message : err);
+          showToast((err && err.userMessage) || "Operation failed. Please try again.", "error");
         })
         .finally(function() {
           // Clear request tracking after a short delay
