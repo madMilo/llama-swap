@@ -115,6 +115,7 @@ healthCheckTimeout: 500
 # logLevel: sets the logging value
 # - optional, default: info
 # - Valid log levels: debug, info, warn, error
+# - HTTP access request logs are emitted at debug level
 logLevel: info
 
 # logTimeFormat: enables and sets the logging timestamp format
@@ -314,9 +315,10 @@ models:
 
     # fitPolicy: controls --fit behavior for scheduling
     # - optional, default: ""
-    # - spill: add --fit to allow RAM spill
-    # - evict_to_fit: avoid --fit and evict other models until it fits
+    # - spill: add --fit to allow RAM spill and expose all GPUs via CUDA_VISIBLE_DEVICES
+    # - evict_to_fit: evict other models until enough VRAM is free on one GPU
     # - cpu_moe: add --fit and --n-cpu-moe for MoE models
+    # - note: evict_to_fit can be used with --fit in cmd when desired
     fitPolicy: spill
 
     # cpuMoe: number of MoE experts to offload to CPU when fitPolicy is cpu_moe

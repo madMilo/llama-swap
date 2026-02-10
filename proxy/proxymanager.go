@@ -284,7 +284,7 @@ func (pm *ProxyManager) setupGinEngine() {
 		statusCode := c.Writer.Status()
 		bodySize := c.Writer.Size()
 
-		pm.proxyLogger.Infof("Request %s \"%s %s %s\" %d %d \"%s\" %v",
+		pm.proxyLogger.Debugf("Request %s \"%s %s %s\" %d %d \"%s\" %v",
 			clientIP,
 			method,
 			path,
