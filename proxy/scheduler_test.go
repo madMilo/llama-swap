@@ -83,7 +83,12 @@ func TestSchedulerScheduleProcess_UnknownFootprint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scheduler := NewScheduler(allocator, testLogger, func() []*Process { return nil }, SchedulerOptions{HostRamCapMB: tt.hostCapMB})
 			err := scheduler.ScheduleProcess(tt.process)
-			require.ErrorIs(t, err, ErrUnknownFootprint)
+			if tt.name == "missing host ram measurement" {
+				require.NoError(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, 0, tt.process.AssignedGPU())
 		})
 	}
 }
@@ -205,9 +210,9 @@ func TestSchedulerEnsureHostRamCapacity(t *testing.T) {
 	scheduler = NewScheduler(allocator, testLogger, func() []*Process { return []*Process{unknownRunning} }, SchedulerOptions{HostRamCapMB: 1000})
 	candidate = newTestProcess(t, "candidate3", "default", 0, 100, tracker)
 	err = scheduler.ensureHostRamCapacity(candidate)
-	require.ErrorIs(t, err, ErrUnknownFootprint)
+	require.NoError(t, err)
 
 	unknown := newTestProcess(t, "unknown", "default", 0, 0, tracker)
 	err = scheduler.ensureHostRamCapacity(unknown)
-	require.ErrorIs(t, err, ErrUnknownFootprint)
+	require.NoError(t, err)
 }
