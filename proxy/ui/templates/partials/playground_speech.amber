@@ -26,13 +26,7 @@ div.topcoat-card.playground-card[data-testid="playground-speech"]
         span.playground-helper Default off. Auto-play when enabled in the Svelte UI.
   div.playground-field
     label[for="playground-speech-input"] Input text
-    if PlaygroundMock
-      textarea#playground-speech-input.playground-textarea[name="input"][rows="4"] This is mock speech input used for deterministic screenshots.
-    else
-      textarea#playground-speech-input.playground-textarea[name="input"][rows="4"][placeholder="Enter text to synthesize..."]
+    textarea#playground-speech-input.playground-textarea[name="input"][rows="4"][placeholder="Enter text to synthesize..."] #{PlaygroundSpeechText}
   div.playground-inline
-    if PlaygroundMock
-      a.topcoat-button[href="/ui/playground?tab=speech&mock=1"][data-htmz-get="/ui/partials/playground/speech?mock=1"][data-htmz-target="#playground-content"] Refresh speech tab
-    else
-      a.topcoat-button[href="/ui/playground?tab=speech"][data-htmz-get="/ui/partials/playground/speech"][data-htmz-target="#playground-content"] Refresh speech tab
+    a.topcoat-button[href=PlaygroundSpeechURL][data-htmz-get=PlaygroundSpeechPartialURL][data-htmz-target="#playground-content"] Refresh speech tab
     span.playground-helper Available voices can be queried from GET /v1/audio/voices?model=...

@@ -7,70 +7,27 @@ block content
   div.section-header
     h1 Playground
     div.section-actions
-      if PlaygroundTab == "images"
-        if PlaygroundMock
-          a.topcoat-button[href="/ui/playground?tab=images&mock=1"] Refresh tab
-        else
-          a.topcoat-button[href="/ui/playground?tab=images"] Refresh tab
-      else if PlaygroundTab == "speech"
-        if PlaygroundMock
-          a.topcoat-button[href="/ui/playground?tab=speech&mock=1"] Refresh tab
-        else
-          a.topcoat-button[href="/ui/playground?tab=speech"] Refresh tab
-      else if PlaygroundTab == "audio"
-        if PlaygroundMock
-          a.topcoat-button[href="/ui/playground?tab=audio&mock=1"] Refresh tab
-        else
-          a.topcoat-button[href="/ui/playground?tab=audio"] Refresh tab
-      else
-        if PlaygroundMock
-          a.topcoat-button[href="/ui/playground?tab=chat&mock=1"] Refresh tab
-        else
-          a.topcoat-button[href="/ui/playground?tab=chat"] Refresh tab
+      a.topcoat-button[href=PlaygroundPageURL] Refresh tab
   p.page-description Explore chat, image, speech, and transcription requests using the same defaults as the Svelte playground.
   if PlaygroundMock
     div.topcoat-notification.topcoat-notification--info[data-testid="playground-mock-note"] Mock data mode is enabled for UI testing and screenshots.
   nav.playground-tabs
     if PlaygroundTab == "chat"
-      if PlaygroundMock
-        a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=chat&mock=1"][data-htmz-get="/ui/partials/playground/chat?mock=1"][data-htmz-target="#playground-content"] Chat
-      else
-        a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=chat"][data-htmz-get="/ui/partials/playground/chat"][data-htmz-target="#playground-content"] Chat
+      a.topcoat-button.topcoat-button--cta[href=PlaygroundChatURL][data-htmz-get=PlaygroundChatPartialURL][data-htmz-target="#playground-content"] Chat
     else
-      if PlaygroundMock
-        a.topcoat-button[href="/ui/playground?tab=chat&mock=1"][data-htmz-get="/ui/partials/playground/chat?mock=1"][data-htmz-target="#playground-content"] Chat
-      else
-        a.topcoat-button[href="/ui/playground?tab=chat"][data-htmz-get="/ui/partials/playground/chat"][data-htmz-target="#playground-content"] Chat
+      a.topcoat-button[href=PlaygroundChatURL][data-htmz-get=PlaygroundChatPartialURL][data-htmz-target="#playground-content"] Chat
     if PlaygroundTab == "images"
-      if PlaygroundMock
-        a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=images&mock=1"][data-htmz-get="/ui/partials/playground/images?mock=1"][data-htmz-target="#playground-content"] Images
-      else
-        a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=images"][data-htmz-get="/ui/partials/playground/images"][data-htmz-target="#playground-content"] Images
+      a.topcoat-button.topcoat-button--cta[href=PlaygroundImagesURL][data-htmz-get=PlaygroundImagesPartialURL][data-htmz-target="#playground-content"] Images
     else
-      if PlaygroundMock
-        a.topcoat-button[href="/ui/playground?tab=images&mock=1"][data-htmz-get="/ui/partials/playground/images?mock=1"][data-htmz-target="#playground-content"] Images
-      else
-        a.topcoat-button[href="/ui/playground?tab=images"][data-htmz-get="/ui/partials/playground/images"][data-htmz-target="#playground-content"] Images
+      a.topcoat-button[href=PlaygroundImagesURL][data-htmz-get=PlaygroundImagesPartialURL][data-htmz-target="#playground-content"] Images
     if PlaygroundTab == "speech"
-      if PlaygroundMock
-        a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=speech&mock=1"][data-htmz-get="/ui/partials/playground/speech?mock=1"][data-htmz-target="#playground-content"] Speech
-      else
-        a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=speech"][data-htmz-get="/ui/partials/playground/speech"][data-htmz-target="#playground-content"] Speech
+      a.topcoat-button.topcoat-button--cta[href=PlaygroundSpeechURL][data-htmz-get=PlaygroundSpeechPartialURL][data-htmz-target="#playground-content"] Speech
     else
-      if PlaygroundMock
-        a.topcoat-button[href="/ui/playground?tab=speech&mock=1"][data-htmz-get="/ui/partials/playground/speech?mock=1"][data-htmz-target="#playground-content"] Speech
-      else
-        a.topcoat-button[href="/ui/playground?tab=speech"][data-htmz-get="/ui/partials/playground/speech"][data-htmz-target="#playground-content"] Speech
+      a.topcoat-button[href=PlaygroundSpeechURL][data-htmz-get=PlaygroundSpeechPartialURL][data-htmz-target="#playground-content"] Speech
     if PlaygroundTab == "audio"
-      if PlaygroundMock
-        a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=audio&mock=1"][data-htmz-get="/ui/partials/playground/audio?mock=1"][data-htmz-target="#playground-content"] Transcription
-      else
-        a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=audio"][data-htmz-get="/ui/partials/playground/audio"][data-htmz-target="#playground-content"] Transcription
+      a.topcoat-button.topcoat-button--cta[href=PlaygroundAudioURL][data-htmz-get=PlaygroundAudioPartialURL][data-htmz-target="#playground-content"] Transcription
     else
-      if PlaygroundMock
-        a.topcoat-button[href="/ui/playground?tab=audio&mock=1"][data-htmz-get="/ui/partials/playground/audio?mock=1"][data-htmz-target="#playground-content"] Transcription
-      else
-        a.topcoat-button[href="/ui/playground?tab=audio"][data-htmz-get="/ui/partials/playground/audio"][data-htmz-target="#playground-content"] Transcription
+      a.topcoat-button[href=PlaygroundAudioURL][data-htmz-get=PlaygroundAudioPartialURL][data-htmz-target="#playground-content"] Transcription
   div#playground-content
     if PlaygroundTab == "images"
       import ../partials/playground_images

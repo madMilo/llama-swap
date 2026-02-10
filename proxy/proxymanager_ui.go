@@ -61,21 +61,34 @@ type UIRunningProcess struct {
 }
 
 type UIPageData struct {
-	NavItems             []UINavigationItem
-	VersionInfo          UIVersionInfo
-	Models               []UIModel
-	RunningProcesses     []UIRunningProcess
-	Logs                 string
-	PlaygroundTab        string
-	PlaygroundMock       bool
-	ActivityMetrics      []UIActivityMetric
-	ActivityCapture      *UIActivityCapture
-	ActivityCaptureNote  string
-	ProxyLogs            string
-	UpstreamLogs         string
-	LogViewerMode        string
-	RecommendationModels []UIRecommendationModel
-	RecommendationNotes  []string
+	NavItems                   []UINavigationItem
+	VersionInfo                UIVersionInfo
+	Models                     []UIModel
+	RunningProcesses           []UIRunningProcess
+	Logs                       string
+	PlaygroundTab              string
+	PlaygroundMock             bool
+	PlaygroundPageURL          string
+	PlaygroundChatURL          string
+	PlaygroundImagesURL        string
+	PlaygroundSpeechURL        string
+	PlaygroundAudioURL         string
+	PlaygroundChatPartialURL   string
+	PlaygroundImagesPartialURL string
+	PlaygroundSpeechPartialURL string
+	PlaygroundAudioPartialURL  string
+	PlaygroundChatText         string
+	PlaygroundSystemText       string
+	PlaygroundImageText        string
+	PlaygroundSpeechText       string
+	ActivityMetrics            []UIActivityMetric
+	ActivityCapture            *UIActivityCapture
+	ActivityCaptureNote        string
+	ProxyLogs                  string
+	UpstreamLogs               string
+	LogViewerMode              string
+	RecommendationModels       []UIRecommendationModel
+	RecommendationNotes        []string
 }
 
 func (pm *ProxyManager) uiIndexHandler(c *gin.Context) {
@@ -116,12 +129,7 @@ func (pm *ProxyManager) uiPlaygroundPageHandler(c *gin.Context) {
 	tab := uiPlaygroundTab(c.Query("tab"))
 	mock := uiTruthy(c.Query("mock"))
 	data := pm.uiPageData("/ui/playground")
-	data.PlaygroundTab = tab
-	data.PlaygroundMock = mock
-	data.Models = pm.uiModelsList()
-	if mock {
-		data.Models = uiPlaygroundMockModels(data.Models)
-	}
+	pm.uiPopulatePlaygroundData(&data, tab, mock)
 	pm.renderUITemplate(c, "pages/playground", data)
 }
 
@@ -190,44 +198,28 @@ func (pm *ProxyManager) uiLogViewerPartialHandler(c *gin.Context) {
 func (pm *ProxyManager) uiPlaygroundChatPartialHandler(c *gin.Context) {
 	mock := uiTruthy(c.Query("mock"))
 	data := pm.uiPageData("/ui/playground")
-	data.PlaygroundMock = mock
-	data.Models = pm.uiModelsList()
-	if mock {
-		data.Models = uiPlaygroundMockModels(data.Models)
-	}
+	pm.uiPopulatePlaygroundData(&data, "chat", mock)
 	pm.renderUITemplate(c, "partials/playground_chat", data)
 }
 
 func (pm *ProxyManager) uiPlaygroundImagesPartialHandler(c *gin.Context) {
 	mock := uiTruthy(c.Query("mock"))
 	data := pm.uiPageData("/ui/playground")
-	data.PlaygroundMock = mock
-	data.Models = pm.uiModelsList()
-	if mock {
-		data.Models = uiPlaygroundMockModels(data.Models)
-	}
+	pm.uiPopulatePlaygroundData(&data, "images", mock)
 	pm.renderUITemplate(c, "partials/playground_images", data)
 }
 
 func (pm *ProxyManager) uiPlaygroundSpeechPartialHandler(c *gin.Context) {
 	mock := uiTruthy(c.Query("mock"))
 	data := pm.uiPageData("/ui/playground")
-	data.PlaygroundMock = mock
-	data.Models = pm.uiModelsList()
-	if mock {
-		data.Models = uiPlaygroundMockModels(data.Models)
-	}
+	pm.uiPopulatePlaygroundData(&data, "speech", mock)
 	pm.renderUITemplate(c, "partials/playground_speech", data)
 }
 
 func (pm *ProxyManager) uiPlaygroundAudioPartialHandler(c *gin.Context) {
 	mock := uiTruthy(c.Query("mock"))
 	data := pm.uiPageData("/ui/playground")
-	data.PlaygroundMock = mock
-	data.Models = pm.uiModelsList()
-	if mock {
-		data.Models = uiPlaygroundMockModels(data.Models)
-	}
+	pm.uiPopulatePlaygroundData(&data, "audio", mock)
 	pm.renderUITemplate(c, "partials/playground_audio", data)
 }
 
@@ -272,6 +264,42 @@ func uiLogViewerMode(mode string) string {
 	default:
 		return "panels"
 	}
+}
+
+func (pm *ProxyManager) uiPopulatePlaygroundData(data *UIPageData, tab string, mock bool) {
+	data.PlaygroundTab = uiPlaygroundTab(tab)
+	data.PlaygroundMock = mock
+	data.PlaygroundPageURL = uiPlaygroundTabURL(data.PlaygroundTab, mock)
+	data.PlaygroundChatURL = uiPlaygroundTabURL("chat", mock)
+	data.PlaygroundImagesURL = uiPlaygroundTabURL("images", mock)
+	data.PlaygroundSpeechURL = uiPlaygroundTabURL("speech", mock)
+	data.PlaygroundAudioURL = uiPlaygroundTabURL("audio", mock)
+	data.PlaygroundChatPartialURL = uiPlaygroundPartialURL("chat", mock)
+	data.PlaygroundImagesPartialURL = uiPlaygroundPartialURL("images", mock)
+	data.PlaygroundSpeechPartialURL = uiPlaygroundPartialURL("speech", mock)
+	data.PlaygroundAudioPartialURL = uiPlaygroundPartialURL("audio", mock)
+	data.Models = pm.uiModelsList()
+	if mock {
+		data.Models = uiPlaygroundMockModels(data.Models)
+		data.PlaygroundSystemText = "You are a concise assistant for UI screenshot tests."
+		data.PlaygroundChatText = "Summarize why mocked playground data helps visual test stability."
+		data.PlaygroundImageText = "A cozy desk setup with a llama figurine, clean UI style, high detail."
+		data.PlaygroundSpeechText = "This is mock speech input used for deterministic screenshots."
+	}
+}
+
+func uiPlaygroundTabURL(tab string, mock bool) string {
+	if mock {
+		return fmt.Sprintf("/ui/playground?tab=%s&mock=1", tab)
+	}
+	return fmt.Sprintf("/ui/playground?tab=%s", tab)
+}
+
+func uiPlaygroundPartialURL(tab string, mock bool) string {
+	if mock {
+		return fmt.Sprintf("/ui/partials/playground/%s?mock=1", tab)
+	}
+	return fmt.Sprintf("/ui/partials/playground/%s", tab)
 }
 
 func uiTruthy(value string) bool {

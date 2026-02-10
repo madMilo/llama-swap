@@ -14,8 +14,5 @@ div.topcoat-card.playground-card[data-testid="playground-audio"]
       input#playground-audio-file.playground-input[type="file"][accept=".mp3,.wav"]
       span.playground-helper Accepted formats: MP3, WAV (max 25MB).
   div.playground-inline
-    if PlaygroundMock
-      a.topcoat-button[href="/ui/playground?tab=audio&mock=1"][data-htmz-get="/ui/partials/playground/audio?mock=1"][data-htmz-target="#playground-content"] Refresh transcription tab
-    else
-      a.topcoat-button[href="/ui/playground?tab=audio"][data-htmz-get="/ui/partials/playground/audio"][data-htmz-target="#playground-content"] Refresh transcription tab
+    a.topcoat-button[href=PlaygroundAudioURL][data-htmz-get=PlaygroundAudioPartialURL][data-htmz-target="#playground-content"] Refresh transcription tab
     span.playground-helper Transcriptions return JSON with a text field.

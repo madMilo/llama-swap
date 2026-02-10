@@ -25,13 +25,7 @@ div.topcoat-card.playground-card[data-testid="playground-images"]
           option[value="1024x1792"] 1024x1792 (SDXL)
   div.playground-field
     label[for="playground-image-prompt"] Prompt
-    if PlaygroundMock
-      textarea#playground-image-prompt.playground-textarea[name="prompt"][rows="4"] A cozy desk setup with a llama figurine, clean UI style, high detail.
-    else
-      textarea#playground-image-prompt.playground-textarea[name="prompt"][rows="4"][placeholder="Describe the image you want to generate..."]
+    textarea#playground-image-prompt.playground-textarea[name="prompt"][rows="4"][placeholder="Describe the image you want to generate..."] #{PlaygroundImageText}
   div.playground-inline
-    if PlaygroundMock
-      a.topcoat-button[href="/ui/playground?tab=images&mock=1"][data-htmz-get="/ui/partials/playground/images?mock=1"][data-htmz-target="#playground-content"] Refresh images tab
-    else
-      a.topcoat-button[href="/ui/playground?tab=images"][data-htmz-get="/ui/partials/playground/images"][data-htmz-target="#playground-content"] Refresh images tab
+    a.topcoat-button[href=PlaygroundImagesURL][data-htmz-get=PlaygroundImagesPartialURL][data-htmz-target="#playground-content"] Refresh images tab
     span.playground-helper The response returns base64-encoded data or a URL.

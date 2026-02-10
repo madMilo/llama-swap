@@ -33,3 +33,18 @@ func TestUIPlaygroundMockModels(t *testing.T) {
 		t.Fatalf("expected first mock model ID to be set")
 	}
 }
+
+func TestUIPlaygroundURLs(t *testing.T) {
+	if got := uiPlaygroundTabURL("chat", false); got != "/ui/playground?tab=chat" {
+		t.Fatalf("unexpected non-mock tab URL: %s", got)
+	}
+	if got := uiPlaygroundTabURL("chat", true); got != "/ui/playground?tab=chat&mock=1" {
+		t.Fatalf("unexpected mock tab URL: %s", got)
+	}
+	if got := uiPlaygroundPartialURL("images", false); got != "/ui/partials/playground/images" {
+		t.Fatalf("unexpected non-mock partial URL: %s", got)
+	}
+	if got := uiPlaygroundPartialURL("images", true); got != "/ui/partials/playground/images?mock=1" {
+		t.Fatalf("unexpected mock partial URL: %s", got)
+	}
+}
