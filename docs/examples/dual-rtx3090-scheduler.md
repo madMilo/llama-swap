@@ -5,12 +5,12 @@ This example shows how to run llama-swap on a dual RTX 3090 system (24GB VRAM ea
 Key points:
 
 - **GPU VRAM caps**: clamp the scheduler to 24GB per GPU.
-- **Host RAM cap**: limit the scheduler to 240GB system RAM for non-spill models.
+- **Host RAM cap**: limit scheduler RAM accounting to 240GB system RAM for non-spill models.
 - **Initial usage hints**: set `initialVramMB` to 95% of available VRAM (single GPU or dual GPU). For `glm-4.7-dual` and `deepseek-v3-dual`, also set `initialCpuMB: 245760` (240GB) so the scheduler understands the large RAM needs from the start.
 
 > Note: Replace `/models` with the path where your GGUF files live. The container binds it to `/models`.
 >
-> Docker GPU selection: llama-swap injects `CUDA_VISIBLE_DEVICES` for **single-GPU** scheduling. To make that available inside the container, pass `-e CUDA_VISIBLE_DEVICES` and use `--gpus all`. For **dual-GPU** models, set `CUDA_VISIBLE_DEVICES=0,1` explicitly in the model config and still use `--gpus all`.
+> Docker GPU selection: for `fitPolicy: evict_to_fit`, llama-swap assigns a single GPU and injects `CUDA_VISIBLE_DEVICES=<index>`. For `fitPolicy: spill`, llama-swap injects all detected GPUs (for example `CUDA_VISIBLE_DEVICES=0,1`). To pass this into Docker, use `-e CUDA_VISIBLE_DEVICES` with `--gpus all`. For explicit dual-GPU lanes, set `CUDA_VISIBLE_DEVICES=0,1` directly in the docker command.
 
 ## Example configuration
 
@@ -29,9 +29,9 @@ models:
   # ---------------------------------------------------------
   # GPU 0: FAST INFERENCE LANE (GLM Flash & Tools)
   # ---------------------------------------------------------
-  glm-flash-q4-gpu0:
+  glm-flash-q4:
     name: "GLM-4.7 Flash Q4_K_XL"
-    fitPolicy: spill
+    fitPolicy: evict_to_fit
     initialVramMB: 23347
     initialCpuMB: 0
     cmd: >
@@ -44,8 +44,8 @@ models:
         --host 0.0.0.0 --port ${PORT}
         -m /models/GLM-4.7-Flash-GGUF-Q4_K_XL/GLM-4.7-Flash-UD-Q4_K_XL.gguf
         -c 202752
-        --flash-attn on
         --fit on
+        --flash-attn on
         --cache-type-k q4_0 --cache-type-v q4_0
         --batch-size 8192 --ubatch-size 2048
         --no-webui
@@ -53,9 +53,9 @@ models:
         --repeat-penalty 1.0
     ttl: 900
 
-  glm-flash-q8-gpu0:
+  glm-flash-q8:
     name: "GLM-4.7 Flash Q8_K_XL"
-    fitPolicy: spill
+    fitPolicy: evict_to_fit
     initialVramMB: 23347
     initialCpuMB: 0
     cmd: >
@@ -70,6 +70,7 @@ models:
         -c 202752
         --flash-attn on
         --fit on
+        --cpu-moe
         --cache-type-k q4_0 --cache-type-v q4_0
         --batch-size 8192 --ubatch-size 2048
         --no-webui
@@ -82,7 +83,7 @@ models:
   # ---------------------------------------------------------
   qwen-30b-gpu1:
     name: "Qwen3 Coder 30B-A3B-Instruct Q4_K_XL"
-    fitPolicy: spill
+    fitPolicy: evict_to_fit
     initialVramMB: 23347
     initialCpuMB: 0
     cmd: >
@@ -103,11 +104,11 @@ models:
         --temp 0.7 --min-p 0.0 --top-p 0.80 --top-k 20 --repeat-penalty 1.05
     ttl: 900
 
-  qwen-next-gpu1:
+  qwen-next:
     name: "Qwen3-Coder Next MXFP4_MOE"
-    fitPolicy: spill
+    fitPolicy: evict_to_fit
     initialVramMB: 23347
-    initialCpuMB: 0
+    initialCpuMB: 120
     cmd: >
       docker run --rm --gpus all
         -e LLAMA_SET_ROWS=1
@@ -120,6 +121,7 @@ models:
         -c 131072
         --flash-attn on
         --fit on
+        --cpu-moe
         --cache-type-k q4_0 --cache-type-v q4_0
         --no-webui
         --jinja --reasoning-format none
@@ -132,9 +134,9 @@ models:
   glm-flash-q8-dual:
     name: "GLM-4.7 Flash Q8_K_XL"
     concurrencyLimit: 1
-    fitPolicy: spill
+    fitPolicy: evict_to_fit
     initialVramMB: 46759
-    initialCpuMB: 0
+    initialCpuMB: 245760
     cmd: >
       docker run --rm --gpus all
         -e LLAMA_SET_ROWS=1
@@ -157,7 +159,7 @@ models:
   qwen-next-dual:
     name: "Qwen3 Coder Next MXFP4_MOE"
     concurrencyLimit: 1
-    fitPolicy: spill
+    fitPolicy: evict_to_fit
     initialVramMB: 46759
     initialCpuMB: 0
     cmd: >
@@ -181,7 +183,7 @@ models:
   glm-4.7-dual:
     name: "GLM-4.7 Q4_K_XL"
     concurrencyLimit: 1
-    fitPolicy: spill
+    fitPolicy: evict_to_fit
     initialVramMB: 46759
     initialCpuMB: 245760
     cmd: >
@@ -196,6 +198,7 @@ models:
         -c 131072
         --flash-attn on
         --fit on
+        --cpu-moe
         --cache-type-k q4_0 --cache-type-v q4_0
         --batch-size 8192 --ubatch-size 2048
         --no-webui
@@ -205,7 +208,7 @@ models:
   deepseek-v3-dual:
     name: "DeepSeek v3.2"
     concurrencyLimit: 1
-    fitPolicy: spill
+    fitPolicy: evict_to_fit
     initialVramMB: 46759
     initialCpuMB: 245760
     cmd: >
@@ -218,6 +221,7 @@ models:
         --host 0.0.0.0 --port ${PORT}
         -m /models/DeepSeek-V3.2-GGUF-IQ3_XXS/UD-IQ3_XXS/DeepSeek-V3.2-UD-IQ3_XXS-00001-of-00006.gguf
         --fit on
+        --cpu-moe
         -c 131072
         --flash-attn on
         --cache-type-k q4_0 --cache-type-v q4_0
@@ -226,6 +230,14 @@ models:
         --jinja --temp 0.6 --top-p 0.95 --min-p 0.01 --seed 3407
     ttl: 900
 ```
+
+
+
+## Logging notes
+
+- At `logLevel: info`, proxy lifecycle messages are shown but HTTP access request logs are hidden.
+- HTTP access request logs are emitted at `logLevel: debug`.
+- To include upstream model stdout in terminal output, set `logToStdout: both` (or `upstream`).
 
 ## Why these scheduler settings matter
 

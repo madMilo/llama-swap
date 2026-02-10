@@ -54,7 +54,27 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 	if err := s.ensureHostRamCapacity(process); err != nil {
 		return err
 	}
-	if strings.ToLower(process.FitPolicy()) != "evict_to_fit" {
+
+	fitPolicy := strings.ToLower(process.FitPolicy())
+	if fitPolicy == "spill" {
+		gpus, err := s.allocator.GetGPUs()
+		if err != nil {
+			return err
+		}
+		gpus = s.applyVramCaps(gpus)
+		if len(gpus) == 0 {
+			return fmt.Errorf("no GPUs detected for scheduling")
+		}
+
+		visible := make([]string, 0, len(gpus))
+		for _, gpu := range gpus {
+			visible = append(visible, fmt.Sprintf("%d", gpu.Index))
+		}
+		process.SetRuntimeEnv([]string{fmt.Sprintf("CUDA_VISIBLE_DEVICES=%s", strings.Join(visible, ","))})
+		return nil
+	}
+
+	if fitPolicy != "evict_to_fit" {
 		return nil
 	}
 

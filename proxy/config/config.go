@@ -547,9 +547,6 @@ func applyFitPolicy(modelConfig *ModelConfig) error {
 	hasCpuMoe := strings.Contains(cmd, "--n-cpu-moe") || strings.Contains(cmd, "--cpu-moe")
 
 	if fitPolicy == "evict_to_fit" {
-		if hasFit {
-			return fmt.Errorf("fitPolicy evict_to_fit conflicts with --fit in cmd")
-		}
 		return nil
 	}
 

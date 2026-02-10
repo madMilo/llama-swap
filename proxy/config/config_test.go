@@ -1373,3 +1373,22 @@ models:
 	})
 
 }
+
+func TestConfig_EvictToFitAllowsFitFlagInCommand(t *testing.T) {
+	content := `
+models:
+  model1:
+    fitPolicy: evict_to_fit
+    proxy: "http://localhost:8080"
+    cmd: |
+      llama-server
+      --model /tmp/model.gguf
+      --fit on
+`
+	cfg, err := LoadConfigFromReader(strings.NewReader(content))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	assert.Contains(t, cfg.Models["model1"].Cmd, "--fit on")
+}

@@ -55,7 +55,20 @@ func TestSchedulerScheduleProcess_FitPolicyHostRamOnly(t *testing.T) {
 	spill := newTestProcess(t, "spill", "spill", 0, 2000, tracker)
 	err = scheduler.ScheduleProcess(spill)
 	require.NoError(t, err)
-	require.Equal(t, 0, allocator.calls)
+	require.Equal(t, 1, allocator.calls)
+	require.Equal(t, []string{"CUDA_VISIBLE_DEVICES=0"}, spill.runtimeEnv)
+}
+
+func TestSchedulerScheduleProcess_SpillAssignsAllGPUs(t *testing.T) {
+	tracker := NewMemoryTracker()
+	allocator := &fakeGPUAllocator{gpus: []GPUInfo{{Index: 0, FreeMB: 500, TotalMB: 1000}, {Index: 1, FreeMB: 400, TotalMB: 1000}}}
+	scheduler := NewScheduler(allocator, testLogger, func() []*Process { return nil }, SchedulerOptions{GpuVramCapsMB: []uint64{300, 300}})
+
+	spill := newTestProcess(t, "spill", "spill", 0, 200, tracker)
+	err := scheduler.ScheduleProcess(spill)
+	require.NoError(t, err)
+	require.Equal(t, 1, allocator.calls)
+	require.Equal(t, []string{"CUDA_VISIBLE_DEVICES=0,1"}, spill.runtimeEnv)
 }
 
 func TestSchedulerScheduleProcess_UnknownFootprint(t *testing.T) {
