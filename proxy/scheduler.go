@@ -51,19 +51,25 @@ func NewScheduler(allocator GPUAllocator, logger *LogMonitor, provider func() []
 }
 
 func (s *Scheduler) ScheduleProcess(process *Process) error {
+	fitPolicy := strings.ToLower(process.FitPolicy())
+	s.logger.Infof("<%s> scheduling decision start: fit_policy=%s", process.ID, fitPolicy)
+
 	if err := s.ensureHostRamCapacity(process); err != nil {
+		s.logger.Infof("<%s> scheduling decision: not scheduled (%v)", process.ID, err)
 		return err
 	}
 
-	fitPolicy := strings.ToLower(process.FitPolicy())
 	if fitPolicy == "spill" {
 		gpus, err := s.allocator.GetGPUs()
 		if err != nil {
+			s.logger.Infof("<%s> scheduling decision: not scheduled (unable to inspect GPUs: %v)", process.ID, err)
 			return err
 		}
 		gpus = s.applyVramCaps(gpus)
 		if len(gpus) == 0 {
-			return fmt.Errorf("no GPUs detected for scheduling")
+			err := fmt.Errorf("no GPUs detected for scheduling")
+			s.logger.Infof("<%s> scheduling decision: not scheduled (%v)", process.ID, err)
+			return err
 		}
 
 		visible := make([]string, 0, len(gpus))
@@ -71,10 +77,12 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 			visible = append(visible, fmt.Sprintf("%d", gpu.Index))
 		}
 		process.SetRuntimeEnv([]string{fmt.Sprintf("CUDA_VISIBLE_DEVICES=%s", strings.Join(visible, ","))})
+		s.logger.Infof("<%s> scheduling decision: scheduled with fit_policy=spill visible_gpus=%s", process.ID, strings.Join(visible, ","))
 		return nil
 	}
 
 	if fitPolicy != "evict_to_fit" {
+		s.logger.Infof("<%s> scheduling decision: scheduled without GPU placement (fit_policy=%s)", process.ID, fitPolicy)
 		return nil
 	}
 
@@ -85,11 +93,14 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 
 	gpus, err := s.allocator.GetGPUs()
 	if err != nil {
+		s.logger.Infof("<%s> scheduling decision: not scheduled (unable to inspect GPUs: %v)", process.ID, err)
 		return err
 	}
 	gpus = s.applyVramCaps(gpus)
 	if len(gpus) == 0 {
-		return fmt.Errorf("no GPUs detected for scheduling")
+		err := fmt.Errorf("no GPUs detected for scheduling")
+		s.logger.Infof("<%s> scheduling decision: not scheduled (%v)", process.ID, err)
+		return err
 	}
 
 	if requiredMB == 0 {
@@ -102,6 +113,7 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 		}
 		process.SetAssignedGPU(chosen.Index)
 		process.SetRuntimeEnv([]string{fmt.Sprintf("CUDA_VISIBLE_DEVICES=%d", chosen.Index)})
+		s.logger.Infof("<%s> scheduling decision: scheduled on GPU %d (missing VRAM footprint)", process.ID, chosen.Index)
 		return nil
 	}
 
@@ -127,6 +139,7 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 	}
 
 	if len(candidates) == 0 {
+		s.logger.Infof("<%s> scheduling decision: not scheduled (%v required_vram_mb=%d)", process.ID, ErrInsufficientVRAM, requiredMB)
 		return ErrInsufficientVRAM
 	}
 
@@ -141,6 +154,7 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 
 	process.SetAssignedGPU(chosen.gpuIndex)
 	process.SetRuntimeEnv([]string{fmt.Sprintf("CUDA_VISIBLE_DEVICES=%d", chosen.gpuIndex)})
+	s.logger.Infof("<%s> scheduling decision: scheduled on GPU %d evicted=%d required_vram_mb=%d", process.ID, chosen.gpuIndex, len(chosen.evict), requiredMB)
 
 	return nil
 }
@@ -289,6 +303,7 @@ func (s *Scheduler) ensureHostRamCapacity(process *Process) error {
 	requiredMB := process.MeasuredCpuMB()
 	if requiredMB == 0 {
 		s.logger.Warnf("<%s> missing host RAM footprint; skipping host RAM cap check", process.ID)
+		s.logger.Infof("<%s> host RAM scheduling decision: allow (missing host RAM footprint)", process.ID)
 		return nil
 	}
 
@@ -296,12 +311,15 @@ func (s *Scheduler) ensureHostRamCapacity(process *Process) error {
 	total, ok := sumCpuMB(running)
 	if !ok {
 		s.logger.Warnf("unable to fully account host RAM usage for running models; skipping host RAM cap check")
+		s.logger.Infof("<%s> host RAM scheduling decision: allow (running host RAM usage incomplete)", process.ID)
 		return nil
 	}
 
 	if total+requiredMB > s.hostRamCapMB {
+		s.logger.Infof("<%s> host RAM scheduling decision: deny used_mb=%d required_mb=%d cap_mb=%d", process.ID, total, requiredMB, s.hostRamCapMB)
 		return ErrInsufficientHostRAM
 	}
+	s.logger.Infof("<%s> host RAM scheduling decision: allow used_mb=%d required_mb=%d cap_mb=%d", process.ID, total, requiredMB, s.hostRamCapMB)
 	return nil
 }
 
