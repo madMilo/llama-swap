@@ -45,6 +45,14 @@ func (t *MemoryTracker) ObserveLog(signature string, line string) (MemoryFootpri
 	if !ok {
 		return MemoryFootprint{}, false
 	}
+	if existing, ok := t.Get(signature); ok {
+		if footprint.VramMB == 0 {
+			footprint.VramMB = existing.VramMB
+		}
+		if footprint.CpuMB == 0 {
+			footprint.CpuMB = existing.CpuMB
+		}
+	}
 	footprint.RecordedAt = time.Now()
 	t.Set(signature, footprint)
 	return footprint, true
@@ -53,6 +61,8 @@ func (t *MemoryTracker) ObserveLog(signature string, line string) (MemoryFootpri
 var (
 	plainVRAMRegex = regexp.MustCompile(`(?i)(vram|gpu)\s+(used|memory)\s*[:=]\s*([0-9.]+)\s*(mi?b|gi?b)`)
 	plainCPURex    = regexp.MustCompile(`(?i)(cpu|ram)\s+(used|memory)\s*[:=]\s*([0-9.]+)\s*(mi?b|gi?b)`)
+	llamaVRAMRegex = regexp.MustCompile(`(?i)(cuda|vram|gpu)[^\n]*?([0-9]+(?:\.[0-9]+)?)\s*(mi?b|gi?b)`)
+	llamaCPURex    = regexp.MustCompile(`(?i)(cpu|host|ram)[^\n]*?([0-9]+(?:\.[0-9]+)?)\s*(mi?b|gi?b)`)
 )
 
 func parseMemoryFromLog(line string) (MemoryFootprint, bool) {
@@ -82,6 +92,22 @@ func parseMemoryFromLog(line string) (MemoryFootprint, bool) {
 			}
 			return MemoryFootprint{VramMB: vram, CpuMB: cpu}, true
 		}
+	}
+
+	vram := uint64(0)
+	cpu := uint64(0)
+	if matches := llamaVRAMRegex.FindStringSubmatch(line); len(matches) == 4 {
+		if parsed, ok := parseSizeToMB(matches[2], matches[3]); ok {
+			vram = parsed
+		}
+	}
+	if matches := llamaCPURex.FindStringSubmatch(line); len(matches) == 4 {
+		if parsed, ok := parseSizeToMB(matches[2], matches[3]); ok {
+			cpu = parsed
+		}
+	}
+	if vram > 0 || cpu > 0 {
+		return MemoryFootprint{VramMB: vram, CpuMB: cpu}, true
 	}
 
 	return MemoryFootprint{}, false

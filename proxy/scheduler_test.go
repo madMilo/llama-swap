@@ -324,3 +324,24 @@ func TestSchedulerScheduleProcess_ScenarioSmallToLargeTwiceTracksExpectedResiden
 		}
 	}
 }
+
+func TestSchedulerScheduleProcess_PrefersGPUWithoutEviction(t *testing.T) {
+	tracker := NewMemoryTracker()
+	allocator := &fakeGPUAllocator{gpus: []GPUInfo{
+		{Index: 0, FreeMB: 9000, TotalMB: 24576},
+		{Index: 1, FreeMB: 11000, TotalMB: 24576},
+	}}
+
+	running := newTestProcess(t, "running", "evict_to_fit", 4000, 0, tracker)
+	readyOnGPU(running, 1)
+
+	candidate := newTestProcess(t, "candidate", "evict_to_fit", 10000, 0, tracker)
+
+	scheduler := NewScheduler(allocator, testLogger, func() []*Process {
+		return []*Process{running}
+	}, SchedulerOptions{})
+
+	err := scheduler.ScheduleProcess(candidate)
+	require.NoError(t, err)
+	require.Equal(t, 0, candidate.AssignedGPU())
+}

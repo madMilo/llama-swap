@@ -5,6 +5,9 @@ if len(RunningProcesses) > 0
         th Model
         th Name
         th State
+        th GPU
+        th VRAM
+        th Host RAM
         th Proxy
         th TTL
     tbody
@@ -21,6 +24,9 @@ if len(RunningProcesses) > 0
               span.topcoat-label.topcoat-label--success #{$process.State}
             else
               span.topcoat-muted —
+          td #{$process.AssignedGPU}
+          td #{$process.MeasuredVramMB}
+          td #{$process.MeasuredCpuMB}
           td
             if $process.Proxy != ""
               code #{$process.Proxy}

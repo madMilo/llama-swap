@@ -50,11 +50,14 @@ type UIRecommendationModel struct {
 }
 
 type UIRunningProcess struct {
-	Model string
-	Name  string
-	State string
-	Proxy string
-	TTL   string
+	Model          string
+	Name           string
+	State          string
+	Proxy          string
+	TTL            string
+	AssignedGPU    string
+	MeasuredVramMB string
+	MeasuredCpuMB  string
 }
 
 type UIPageData struct {
@@ -91,9 +94,7 @@ func (pm *ProxyManager) uiRunningPageHandler(c *gin.Context) {
 }
 
 func (pm *ProxyManager) uiLogsPageHandler(c *gin.Context) {
-	data := pm.uiPageData("/ui/logs")
-	data.Logs = string(pm.muxLogger.GetHistory())
-	pm.renderUITemplate(c, "pages/logs", data)
+	c.Redirect(http.StatusFound, "/ui/logviewer?view=panels")
 }
 
 func (pm *ProxyManager) uiActivityPageHandler(c *gin.Context) {
@@ -243,7 +244,7 @@ func uiLogViewerMode(mode string) string {
 	case "proxy", "upstream", "panels":
 		return mode
 	default:
-		return "proxy"
+		return "panels"
 	}
 }
 
@@ -441,11 +442,14 @@ func (pm *ProxyManager) uiRunningList() []UIRunningProcess {
 				ttl = fmt.Sprintf("%ds", process.config.UnloadAfter)
 			}
 			processes = append(processes, UIRunningProcess{
-				Model: process.ID,
-				Name:  strings.TrimSpace(process.config.Name),
-				State: string(process.CurrentState()),
-				Proxy: strings.TrimSpace(process.config.Proxy),
-				TTL:   ttl,
+				Model:          process.ID,
+				Name:           strings.TrimSpace(process.config.Name),
+				State:          string(process.CurrentState()),
+				Proxy:          strings.TrimSpace(process.config.Proxy),
+				TTL:            ttl,
+				AssignedGPU:    formatAssignedGPU(process.AssignedGPU()),
+				MeasuredVramMB: formatMB(process.MeasuredVramMB()),
+				MeasuredCpuMB:  formatMB(process.MeasuredCpuMB()),
 			})
 		}
 	}
@@ -543,6 +547,13 @@ func formatSpeed(speed float64) string {
 
 func formatDuration(ms int) string {
 	return fmt.Sprintf("%.2fs", float64(ms)/1000)
+}
+
+func formatAssignedGPU(index int) string {
+	if index < 0 {
+		return "—"
+	}
+	return strconv.Itoa(index)
 }
 
 func formatRelativeTime(timestamp time.Time) string {
