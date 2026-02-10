@@ -17,22 +17,105 @@ div.topcoat-card.capture-card
           p.topcoat-muted No request headers captured.
         if ActivityCapture.HasReqBody
           p.capture-label #{ActivityCapture.ReqBodyLabel}
-          pre.pre-block #{ActivityCapture.ReqBody}
+          div[style="position: relative;"]
+            button.topcoat-button[style="position: absolute; top: -2rem; right: 0; font-size: 0.75rem;"][onclick="copyToClipboard(this, '#{ActivityCapture.ID}-req-body')"] Copy
+            pre.pre-block##{ActivityCapture.ID}-req-body #{ActivityCapture.ReqBody}
         else
           p.topcoat-muted No request body captured.
       div.capture-panel
         h4 Response
         if ActivityCapture.HasRespHeaders
           p.capture-label Headers
-          pre.pre-block #{ActivityCapture.RespHeaders}
+          div[style="position: relative;"]
+            button.topcoat-button[style="position: absolute; top: -2rem; right: 0; font-size: 0.75rem;"][onclick="copyToClipboard(this, '#{ActivityCapture.ID}-resp-headers')"] Copy
+            pre.pre-block##{ActivityCapture.ID}-resp-headers #{ActivityCapture.RespHeaders}
         else
           p.topcoat-muted No response headers captured.
         if ActivityCapture.HasRespBody
-          p.capture-label #{ActivityCapture.RespBodyLabel}
-          pre.pre-block #{ActivityCapture.RespBody}
+          div[style="margin-top: 1rem;"]
+            div[style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;"]
+              button.topcoat-button.capture-tab.active[onclick="switchCaptureTab(this, '#{ActivityCapture.ID}', 'raw')"] Raw
+              button.topcoat-button.capture-tab[onclick="switchCaptureTab(this, '#{ActivityCapture.ID}', 'pretty')"] Pretty
+              if ActivityCapture.IsStreamingChat
+                button.topcoat-button.capture-tab[onclick="switchCaptureTab(this, '#{ActivityCapture.ID}', 'chat')"] Chat
+              button.topcoat-button[style="margin-left: auto; font-size: 0.75rem;"][onclick="copyCaptureContent('#{ActivityCapture.ID}')"] Copy
+            div.capture-content##{ActivityCapture.ID}-raw[style="display: block;"]
+              pre.pre-block #{ActivityCapture.RespBody}
+            div.capture-content##{ActivityCapture.ID}-pretty[style="display: none;"]
+              if ActivityCapture.RespBodyPretty != ""
+                pre.pre-block #{ActivityCapture.RespBodyPretty}
+              else
+                pre.pre-block #{ActivityCapture.RespBody}
+            if ActivityCapture.IsStreamingChat
+              div.capture-content##{ActivityCapture.ID}-chat[style="display: none;"]
+                if ActivityCapture.ChatReconstruction != ""
+                  div #{ActivityCapture.ChatReconstruction}
+                else
+                  pre.pre-block #{ActivityCapture.RespBody}
         else
           p.topcoat-muted No response body captured.
   else if ActivityCaptureNote != ""
     p.topcoat-muted #{ActivityCaptureNote}
   else
     p.topcoat-muted Select a capture to view request and response details.
+
+script.
+  function copyToClipboard(button, elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    const text = element.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const originalText = button.textContent;
+      button.textContent = 'Copied!';
+      setTimeout(() => {
+        button.textContent = originalText;
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
+  }
+
+  function switchCaptureTab(button, captureId, tab) {
+    // Update button states
+    const tabs = button.parentElement.querySelectorAll('.capture-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    button.classList.add('active');
+
+    // Update content visibility
+    const contents = ['raw', 'pretty', 'chat'];
+    contents.forEach(c => {
+      const el = document.getElementById(captureId + '-' + c);
+      if (el) {
+        el.style.display = c === tab ? 'block' : 'none';
+      }
+    });
+  }
+
+  function copyCaptureContent(captureId) {
+    // Find active tab
+    const activeTab = document.querySelector(`#${captureId}-raw`).parentElement.querySelector('.capture-tab.active');
+    if (!activeTab) return;
+
+    const tabName = activeTab.textContent.toLowerCase();
+    const contentId = captureId + '-' + tabName;
+    const element = document.getElementById(contentId);
+
+    if (!element) return;
+
+    const text = element.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      // Find the copy button
+      const copyBtn = activeTab.parentElement.querySelector('button[onclick*="copyCaptureContent"]');
+      if (copyBtn) {
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+        }, 2000);
+      }
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
+  }
+

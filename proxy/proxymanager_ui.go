@@ -2,7 +2,9 @@ package proxy
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 	"sort"
 	"strconv"
@@ -477,19 +479,22 @@ type UIActivityMetric struct {
 }
 
 type UIActivityCapture struct {
-	ID             int
-	DisplayID      string
-	ReqPath        string
-	ReqHeaders     string
-	ReqBody        string
-	ReqBodyLabel   string
-	RespHeaders    string
-	RespBody       string
-	RespBodyLabel  string
-	HasReqBody     bool
-	HasRespBody    bool
-	HasReqHeaders  bool
-	HasRespHeaders bool
+	ID                 int
+	DisplayID          string
+	ReqPath            string
+	ReqHeaders         string
+	ReqBody            string
+	ReqBodyLabel       string
+	RespHeaders        string
+	RespBody           string
+	RespBodyLabel      string
+	RespBodyPretty     string
+	ChatReconstruction string
+	IsStreamingChat    bool
+	HasReqBody         bool
+	HasRespBody        bool
+	HasReqHeaders      bool
+	HasRespHeaders     bool
 }
 
 func (pm *ProxyManager) uiModelsList() []UIModel {
@@ -638,21 +643,87 @@ func uiActivityCapture(capture *ReqRespCapture) *UIActivityCapture {
 	respBody, respBodyLabel := formatBody(capture.RespBody)
 	reqHeaders := formatHeaders(capture.ReqHeaders)
 	respHeaders := formatHeaders(capture.RespHeaders)
-	return &UIActivityCapture{
-		ID:             capture.ID,
-		DisplayID:      formatNumber(capture.ID + 1),
-		ReqPath:        capture.ReqPath,
-		ReqHeaders:     reqHeaders,
-		ReqBody:        reqBody,
-		ReqBodyLabel:   reqBodyLabel,
-		RespHeaders:    respHeaders,
-		RespBody:       respBody,
-		RespBodyLabel:  respBodyLabel,
-		HasReqBody:     len(capture.ReqBody) > 0,
-		HasRespBody:    len(capture.RespBody) > 0,
-		HasReqHeaders:  len(capture.ReqHeaders) > 0,
-		HasRespHeaders: len(capture.RespHeaders) > 0,
+
+	// Try to pretty-print JSON response body
+	respBodyPretty := ""
+	isStreamingChat := false
+	chatReconstruction := ""
+
+	if len(capture.RespBody) > 0 && utf8.Valid(capture.RespBody) {
+		// Check if it's streaming SSE data
+		bodyStr := string(capture.RespBody)
+		if strings.Contains(bodyStr, "data: {") {
+			isStreamingChat = true
+			chatReconstruction = reconstructSSEChat(bodyStr)
+		}
+
+		// Try to pretty-print as JSON
+		var jsonData interface{}
+		if err := json.Unmarshal(capture.RespBody, &jsonData); err == nil {
+			if prettyBytes, err := json.MarshalIndent(jsonData, "", "  "); err == nil {
+				respBodyPretty = string(prettyBytes)
+			}
+		}
 	}
+
+	return &UIActivityCapture{
+		ID:                 capture.ID,
+		DisplayID:          formatNumber(capture.ID + 1),
+		ReqPath:            capture.ReqPath,
+		ReqHeaders:         reqHeaders,
+		ReqBody:            reqBody,
+		ReqBodyLabel:       reqBodyLabel,
+		RespHeaders:        respHeaders,
+		RespBody:           respBody,
+		RespBodyLabel:      respBodyLabel,
+		RespBodyPretty:     respBodyPretty,
+		ChatReconstruction: chatReconstruction,
+		IsStreamingChat:    isStreamingChat,
+		HasReqBody:         len(capture.ReqBody) > 0,
+		HasRespBody:        len(capture.RespBody) > 0,
+		HasReqHeaders:      len(capture.ReqHeaders) > 0,
+		HasRespHeaders:     len(capture.RespHeaders) > 0,
+	}
+}
+
+func reconstructSSEChat(sseData string) string {
+	lines := strings.Split(sseData, "\n")
+	var messages []string
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+
+		jsonStr := strings.TrimPrefix(line, "data: ")
+		if jsonStr == "[DONE]" {
+			continue
+		}
+
+		var data map[string]interface{}
+		if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
+			continue
+		}
+
+		// Extract delta content from OpenAI format
+		if choices, ok := data["choices"].([]interface{}); ok && len(choices) > 0 {
+			if choice, ok := choices[0].(map[string]interface{}); ok {
+				if delta, ok := choice["delta"].(map[string]interface{}); ok {
+					if content, ok := delta["content"].(string); ok && content != "" {
+						messages = append(messages, content)
+					}
+				}
+			}
+		}
+	}
+
+	if len(messages) == 0 {
+		return ""
+	}
+
+	reconstructed := strings.Join(messages, "")
+	return fmt.Sprintf("<div style=\"padding: 1rem; background: #f9fafb; border-radius: 6px;\"><p style=\"margin: 0; white-space: pre-wrap;\">%s</p></div>", template.HTMLEscapeString(reconstructed))
 }
 
 func formatNumber(value int) string {

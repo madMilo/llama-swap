@@ -279,3 +279,17 @@ main {
 .model-unlisted {
   display: none;
 }
+
+/* Capture tabs */
+.capture-tab {
+  font-size: 0.875rem;
+}
+
+.capture-tab.active {
+  background: var(--topcoat-primary);
+  color: white;
+}
+
+.capture-content {
+  margin-top: 0.5rem;
+}
