@@ -61,6 +61,10 @@ type ProxyManager struct {
 }
 
 func New(proxyConfig config.Config) *ProxyManager {
+	return NewWithAllocator(proxyConfig, nil)
+}
+
+func NewWithAllocator(proxyConfig config.Config, allocator GPUAllocator) *ProxyManager {
 	// set up loggers
 
 	var muxLogger, upstreamLogger, proxyLogger *LogMonitor
@@ -134,6 +138,10 @@ func New(proxyConfig config.Config) *ProxyManager {
 
 	shutdownCtx, shutdownCancel := context.WithCancel(context.Background())
 
+	if allocator == nil {
+		allocator = NvidiaSMIAllocator{}
+	}
+
 	var maxMetrics int
 	if proxyConfig.MetricsMaxInMemory <= 0 {
 		maxMetrics = 1000 // Default fallback
@@ -188,7 +196,7 @@ func New(proxyConfig config.Config) *ProxyManager {
 	shouldScheduleHostRAM := proxyConfig.HostRamCapMB > 0
 	hasVramCaps := proxyConfig.GpuVramCapMB > 0 || len(proxyConfig.GpuVramCapsMB) > 0
 	if shouldScheduleVram || shouldScheduleHostRAM || hasVramCaps {
-		scheduler := NewScheduler(NvidiaSMIAllocator{}, proxyLogger, pm.runningProcesses, SchedulerOptions{
+		scheduler := NewScheduler(allocator, proxyLogger, pm.runningProcesses, SchedulerOptions{
 			GpuVramCapMB:  proxyConfig.GpuVramCapMB,
 			GpuVramCapsMB: proxyConfig.GpuVramCapsMB,
 			HostRamCapMB:  proxyConfig.HostRamCapMB,
