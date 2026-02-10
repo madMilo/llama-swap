@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -27,8 +28,39 @@ func main() {
 	silent := flag.Bool("silent", false, "disable all logging")
 
 	ignoreSigTerm := flag.Bool("ignore-sig-term", false, "ignore SIGTERM signal")
+	memoryLogInterval := flag.Duration("memory-log-interval", 0, "interval to emit memory usage logs")
+	memoryLogFormat := flag.String("memory-log-format", "json", "memory log format: json, text, or both")
+	memoryLogVramMB := flag.Uint64("memory-log-vram-mb", 0, "vram usage in MB for memory logs")
+	memoryLogCpuMB := flag.Uint64("memory-log-cpu-mb", 0, "cpu usage in MB for memory logs")
+	memoryLogStepMB := flag.Uint64("memory-log-step-mb", 0, "increment in MB applied each log interval")
+	memoryLogCount := flag.Int("memory-log-count", 0, "number of memory log lines to emit (0=until exit)")
 
 	flag.Parse() // Parse the command-line flags
+
+	if *memoryLogInterval > 0 {
+		format := strings.ToLower(strings.TrimSpace(*memoryLogFormat))
+		go func() {
+			ticker := time.NewTicker(*memoryLogInterval)
+			defer ticker.Stop()
+			currentVram := *memoryLogVramMB
+			currentCPU := *memoryLogCpuMB
+			count := 0
+			for range ticker.C {
+				if format == "json" || format == "both" {
+					fmt.Printf("{\"vram_used_mb\":%d,\"cpu_used_mb\":%d}\n", currentVram, currentCPU)
+				}
+				if format == "text" || format == "both" {
+					fmt.Printf("VRAM used: %.2f GiB CPU used: %.2f GiB\n", float64(currentVram)/1024, float64(currentCPU)/1024)
+				}
+				currentVram += *memoryLogStepMB
+				currentCPU += *memoryLogStepMB
+				count++
+				if *memoryLogCount > 0 && count >= *memoryLogCount {
+					return
+				}
+			}
+		}()
+	}
 
 	// Create a new Gin router
 	r := gin.New()

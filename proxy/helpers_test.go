@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 
@@ -71,15 +72,23 @@ func getTestSimpleResponderConfig(expectedMessage string) config.ModelConfig {
 }
 
 func getTestSimpleResponderConfigPort(expectedMessage string, port int) config.ModelConfig {
+	return getTestSimpleResponderConfigPortArgs(expectedMessage, port)
+}
+
+func getTestSimpleResponderConfigPortArgs(expectedMessage string, port int, extraArgs ...string) config.ModelConfig {
 	// Convert path to forward slashes for cross-platform compatibility
 	// Windows handles forward slashes in paths correctly
 	cmdPath := filepath.ToSlash(simpleResponderPath)
+	extra := strings.TrimSpace(strings.Join(extraArgs, " "))
+	if extra != "" {
+		extra = " " + extra
+	}
 
 	// Create a YAML string with just the values we want to set
 	yamlStr := fmt.Sprintf(`
-cmd: '%s --port %d --silent --respond %s'
+cmd: '%s --port %d --silent --respond %s%s'
 proxy: "http://127.0.0.1:%d"
-`, cmdPath, port, expectedMessage, port)
+`, cmdPath, port, expectedMessage, extra, port)
 
 	var cfg config.ModelConfig
 	if err := yaml.Unmarshal([]byte(yamlStr), &cfg); err != nil {
