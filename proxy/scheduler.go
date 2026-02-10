@@ -175,15 +175,18 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 }
 
 func (s *Scheduler) selectEvictions(process *Process, assigned []*Process, freeMB, requiredMB uint64) ([]*Process, bool) {
-	// Log warning if any assigned processes have unknown footprint
-	for _, p := range assigned {
-		if p.MeasuredVramMB() == 0 {
-			s.logger.Warnf("<%s> process has unknown VRAM footprint; eviction calculations may be conservative", p.ID)
-		}
-	}
-
+	// Check if we need to evict anything
 	if freeMB >= requiredMB {
 		return nil, true
+	}
+
+	// If we need to evict, check if any assigned processes have unknown footprint
+	// We can't make accurate eviction decisions without knowing their size
+	for _, p := range assigned {
+		if p.MeasuredVramMB() == 0 {
+			s.logger.Warnf("<%s> process has unknown VRAM footprint; cannot determine evictions for this GPU", p.ID)
+			return nil, false
+		}
 	}
 
 	evictable := idleProcesses(assigned)
