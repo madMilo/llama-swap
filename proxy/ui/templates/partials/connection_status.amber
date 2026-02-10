@@ -1,0 +1,3 @@
+div#connection-status.connection-status[style="display: none;"]
+  span.connection-status-icon ●
+  span.connection-status-text Connecting...

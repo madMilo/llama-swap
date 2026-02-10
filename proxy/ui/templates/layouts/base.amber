@@ -11,6 +11,7 @@ html
     link[rel="stylesheet"][href="/ui/static/ui.css"]
     link[rel="stylesheet"][href="/ui/static/chroma.css"]
   body
+    import ../partials/connection_status
     header.topcoat-navigation-bar
       span.topcoat-navigation-bar__title Llama Swap UI
       nav[aria-label="Primary"]

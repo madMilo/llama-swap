@@ -199,4 +199,55 @@
   // Expose to window for manual control if needed
   window.RT = RT;
 
+  // Connection status indicator handler
+  const ConnectionStatus = {
+    element: null,
+    hideTimer: null,
+
+    init() {
+      this.element = document.getElementById('connection-status');
+      if (!this.element) return;
+
+      // Listen to realtime events
+      document.addEventListener('realtime:connected', () => this.onConnected());
+      document.addEventListener('realtime:disconnected', () => this.onDisconnected());
+    },
+
+    onConnected() {
+      if (!this.element) return;
+
+      this.element.className = 'connection-status connected';
+      this.element.querySelector('.connection-status-text').textContent = 'Connected';
+      this.element.style.display = 'flex';
+
+      // Auto-hide after 2 seconds
+      if (this.hideTimer) clearTimeout(this.hideTimer);
+      this.hideTimer = setTimeout(() => {
+        this.element.style.opacity = '0';
+        setTimeout(() => {
+          this.element.style.display = 'none';
+          this.element.style.opacity = '1';
+        }, 300);
+      }, 2000);
+    },
+
+    onDisconnected() {
+      if (!this.element) return;
+
+      if (this.hideTimer) clearTimeout(this.hideTimer);
+
+      this.element.className = 'connection-status disconnected';
+      this.element.querySelector('.connection-status-text').textContent = 'Disconnected';
+      this.element.style.display = 'flex';
+      this.element.style.opacity = '1';
+    }
+  };
+
+  // Initialize connection status
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => ConnectionStatus.init());
+  } else {
+    ConnectionStatus.init();
+  }
+
 })();

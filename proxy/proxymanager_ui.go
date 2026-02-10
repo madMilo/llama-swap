@@ -31,6 +31,8 @@ type UIModel struct {
 	Description string
 	Source      string
 	Aliases     []string
+	State       string
+	Unlisted    bool
 }
 
 type UIRecommendationModel struct {
@@ -475,9 +477,6 @@ type UIActivityCapture struct {
 func (pm *ProxyManager) uiModelsList() []UIModel {
 	models := make([]UIModel, 0, len(pm.config.Models))
 	for id, modelConfig := range pm.config.Models {
-		if modelConfig.Unlisted {
-			continue
-		}
 		aliases := []string{}
 		if pm.config.IncludeAliasesInList {
 			for _, alias := range modelConfig.Aliases {
@@ -487,12 +486,31 @@ func (pm *ProxyManager) uiModelsList() []UIModel {
 				}
 			}
 		}
+
+		// Determine model state
+		state := "stopped"
+		if process := pm.findProcessByModelName(id); process != nil {
+			processState := process.CurrentState()
+			switch processState {
+			case StateReady:
+				state = "ready"
+			case StateStarting:
+				state = "starting"
+			case StateStopping:
+				state = "stopping"
+			case StateShutdown:
+				state = "shutdown"
+			}
+		}
+
 		models = append(models, UIModel{
 			ID:          id,
 			Name:        strings.TrimSpace(modelConfig.Name),
 			Description: strings.TrimSpace(modelConfig.Description),
 			Source:      "local",
 			Aliases:     aliases,
+			State:       state,
+			Unlisted:    modelConfig.Unlisted,
 		})
 	}
 

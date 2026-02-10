@@ -35,12 +35,14 @@ func addApiHandlers(pm *ProxyManager) {
 		apiGroup.GET("/models", pm.apiGetModels)
 		apiGroup.POST("/models/unload", pm.apiUnloadAllModels)
 		apiGroup.POST("/models/unload/*model", pm.apiUnloadSingleModelHandler)
+		apiGroup.POST("/models/load/*model", pm.apiLoadSingleModelHandler)
 		apiGroup.GET("/events", pm.apiSendEvents)
 		apiGroup.GET("/metrics", pm.apiGetMetrics)
 		apiGroup.GET("/version", pm.apiGetVersion)
 		apiGroup.GET("/captures/:id", pm.apiGetCapture)
 		apiGroup.GET("/ws", pm.HandleWebSocket)
 	}
+
 }
 
 func (pm *ProxyManager) apiUnloadAllModels(c *gin.Context) {
@@ -255,6 +257,24 @@ func (pm *ProxyManager) apiUnloadSingleModelHandler(c *gin.Context) {
 	}
 
 	process.StopImmediately()
+	c.String(http.StatusOK, "OK")
+}
+
+func (pm *ProxyManager) apiLoadSingleModelHandler(c *gin.Context) {
+	requestedModel := strings.TrimPrefix(c.Param("model"), "/")
+	realModelName, found := pm.config.RealModelName(requestedModel)
+	if !found {
+		pm.sendErrorResponse(c, http.StatusNotFound, "Model not found")
+		return
+	}
+
+	// Use swapProcessGroup to load the model
+	_, err := pm.swapProcessGroup(realModelName)
+	if err != nil {
+		pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("failed to load model: %v", err))
+		return
+	}
+
 	c.String(http.StatusOK, "OK")
 }
 

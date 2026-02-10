@@ -229,3 +229,53 @@ main {
   cursor: col-resize !important;
   user-select: none !important;
 }
+
+/* Connection status indicator */
+.connection-status {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 1000;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.connection-status.connected {
+  background: #059669;
+}
+
+.connection-status.disconnected {
+  background: #dc2626;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.connection-status-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Models table */
+.col-name {
+  display: none;
+}
+
+.model-unlisted {
+  display: none;
+}

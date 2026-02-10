@@ -1,17 +1,26 @@
 if len(Models) > 0
-  table.topcoat-table
+  div[style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;"]
+    label[style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"]
+      input#toggle-unlisted[type="checkbox"][onclick="window.toggleUnlisted()"]
+      span Show unlisted models
+    label[style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"]
+      input#toggle-display[type="checkbox"][onclick="window.toggleDisplay()"]
+      span Show name instead of ID
+  table.topcoat-table#models-table
     thead
       tr
-        th Model ID
-        th Name
+        th.col-id Model ID
+        th.col-name Name
         th Description
         th Source
         th Aliases
+        th State
+        th Actions
     tbody
       each $model in Models
-        tr
-          td #{$model.ID}
-          td
+        tr[class=$model.Unlisted ? "model-unlisted" : ""][data-unlisted=$model.Unlisted ? "true" : "false"]
+          td.col-id #{$model.ID}
+          td.col-name
             if $model.Name != ""
               | #{$model.Name}
             else
@@ -30,6 +39,77 @@ if len(Models) > 0
                   span.topcoat-label #{$alias}
             else
               span.topcoat-muted —
+          td
+            if $model.State == "ready"
+              span.topcoat-label[style="background: #059669; color: white;"] Ready
+            else if $model.State == "starting"
+              span.topcoat-label[style="background: #d97706; color: white;"] Starting
+            else if $model.State == "stopping"
+              span.topcoat-label[style="background: #d97706; color: white;"] Stopping
+            else if $model.State == "shutdown"
+              span.topcoat-label[style="background: #6b7280; color: white;"] Shutdown
+            else
+              span.topcoat-muted Stopped
+          td
+            if $model.State == "ready"
+              button.topcoat-button[data-htmz-post="/api/models/unload/#{$model.ID}"][data-htmz-target="#models-list"][data-htmz-swap="none"][onclick="setTimeout(() => window.refreshModels(), 500)"] Unload
+            else if $model.State == "stopped"
+              button.topcoat-button.topcoat-button--cta[data-htmz-post="/api/models/load/#{$model.ID}"][data-htmz-target="#models-list"][data-htmz-swap="none"][onclick="setTimeout(() => window.refreshModels(), 500)"] Load
+            else
+              span.topcoat-muted —
 else
   div.topcoat-card.empty-state
     p.topcoat-muted No models are configured yet.
+
+script.
+  (function() {
+    // Toggle unlisted models visibility
+    window.toggleUnlisted = function() {
+      const checked = document.getElementById('toggle-unlisted').checked;
+      localStorage.setItem('models-show-unlisted', checked ? '1' : '0');
+      const rows = document.querySelectorAll('#models-table tbody tr');
+      rows.forEach(row => {
+        if (row.dataset.unlisted === 'true') {
+          row.style.display = checked ? '' : 'none';
+        }
+      });
+    };
+
+    // Toggle display mode (ID vs Name)
+    window.toggleDisplay = function() {
+      const checked = document.getElementById('toggle-display').checked;
+      localStorage.setItem('models-display-mode', checked ? 'name' : 'id');
+      const idCols = document.querySelectorAll('.col-id');
+      const nameCols = document.querySelectorAll('.col-name');
+      if (checked) {
+        idCols.forEach(col => col.style.display = 'none');
+        nameCols.forEach(col => col.style.display = '');
+      } else {
+        idCols.forEach(col => col.style.display = '');
+        nameCols.forEach(col => col.style.display = 'none');
+      }
+    };
+
+    // Refresh models table
+    window.refreshModels = function() {
+      htmz.get('/ui/partials/models', '#models-list');
+    };
+
+    // Restore saved preferences
+    const showUnlisted = localStorage.getItem('models-show-unlisted') === '1';
+    const displayMode = localStorage.getItem('models-display-mode') === 'name';
+
+    const unlistedCheckbox = document.getElementById('toggle-unlisted');
+    const displayCheckbox = document.getElementById('toggle-display');
+
+    if (unlistedCheckbox) {
+      unlistedCheckbox.checked = showUnlisted;
+      window.toggleUnlisted();
+    }
+
+    if (displayCheckbox) {
+      displayCheckbox.checked = displayMode;
+      window.toggleDisplay();
+    }
+  })();
+
