@@ -1,29 +1,5 @@
-if LogViewerMode == "proxy"
-  div.log-panel
-    h3 Proxy Logs
-    if ProxyLogs != ""
-      pre.pre-block #{$.ProxyLogs}
-    else
-      div.topcoat-card.empty-state
-        p.topcoat-muted No proxy logs captured yet.
-else if LogViewerMode == "upstream"
-  div.log-panel
-    h3 Upstream Logs
-    if UpstreamLogs != ""
-      pre.pre-block #{$.UpstreamLogs}
-    else
-      div.topcoat-card.empty-state
-        p.topcoat-muted No upstream logs captured yet.
-else if UpstreamLogs == ""
-  div.log-panel
-    h3 Proxy Logs
-    if ProxyLogs != ""
-      pre.pre-block #{$.ProxyLogs}
-    else
-      div.topcoat-card.empty-state
-        p.topcoat-muted No proxy logs captured yet.
-else
-  div.log-panels
+div#logviewer-logs[data-htmz-get="/ui/partials/logviewer?view=#{$.LogViewerMode}"][data-htmz-target="#logviewer-logs"][data-htmz-poll="5000"]
+  if LogViewerMode == "proxy"
     div.log-panel
       h3 Proxy Logs
       if ProxyLogs != ""
@@ -31,6 +7,7 @@ else
       else
         div.topcoat-card.empty-state
           p.topcoat-muted No proxy logs captured yet.
+  else if LogViewerMode == "upstream"
     div.log-panel
       h3 Upstream Logs
       if UpstreamLogs != ""
@@ -38,3 +15,27 @@ else
       else
         div.topcoat-card.empty-state
           p.topcoat-muted No upstream logs captured yet.
+  else if UpstreamLogs == ""
+    div.log-panel
+      h3 Proxy Logs
+      if ProxyLogs != ""
+        pre.pre-block #{$.ProxyLogs}
+      else
+        div.topcoat-card.empty-state
+          p.topcoat-muted No proxy logs captured yet.
+  else
+    div.log-panels
+      div.log-panel
+        h3 Proxy Logs
+        if ProxyLogs != ""
+          pre.pre-block #{$.ProxyLogs}
+        else
+          div.topcoat-card.empty-state
+            p.topcoat-muted No proxy logs captured yet.
+      div.log-panel
+        h3 Upstream Logs
+        if UpstreamLogs != ""
+          pre.pre-block #{$.UpstreamLogs}
+        else
+          div.topcoat-card.empty-state
+            p.topcoat-muted No upstream logs captured yet.

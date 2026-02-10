@@ -47,6 +47,8 @@ type UIRecommendationModel struct {
 	HighlightCpuDelta  bool
 	Recommendation     string
 	RecommendationNote string
+	CpuMoeCount        int
+	HasMeasurements    bool
 }
 
 type UIRunningProcess struct {
@@ -107,10 +109,6 @@ func (pm *ProxyManager) uiRunningPageHandler(c *gin.Context) {
 	pm.renderUITemplate(c, "pages/running", data)
 }
 
-func (pm *ProxyManager) uiLogsPageHandler(c *gin.Context) {
-	c.Redirect(http.StatusFound, "/ui/logviewer?view=panels")
-}
-
 func (pm *ProxyManager) uiActivityPageHandler(c *gin.Context) {
 	data := pm.uiPageData("/ui/activity")
 	data.ActivityMetrics = pm.uiActivityMetrics()
@@ -149,12 +147,6 @@ func (pm *ProxyManager) uiRunningPartialHandler(c *gin.Context) {
 	data := pm.uiPageData("/ui/running")
 	data.RunningProcesses = pm.uiRunningList()
 	pm.renderUITemplate(c, "partials/running", data)
-}
-
-func (pm *ProxyManager) uiLogsPartialHandler(c *gin.Context) {
-	data := pm.uiPageData("/ui/logs")
-	data.Logs = string(pm.muxLogger.GetHistory())
-	pm.renderUITemplate(c, "partials/logs", data)
 }
 
 func (pm *ProxyManager) uiActivityPartialHandler(c *gin.Context) {
@@ -237,7 +229,6 @@ func (pm *ProxyManager) uiPageData(activePath string) UIPageData {
 			{Label: "Activity", Path: "/ui/activity", Active: activePath == "/ui/activity"},
 			{Label: "Recommendations", Path: "/ui/recommendations", Active: activePath == "/ui/recommendations"},
 			{Label: "Log Viewer", Path: "/ui/logviewer", Active: activePath == "/ui/logviewer"},
-			{Label: "Logs", Path: "/ui/logs", Active: activePath == "/ui/logs"},
 			{Label: "Playground", Path: "/ui/playground", Active: activePath == "/ui/playground"},
 		},
 		VersionInfo: UIVersionInfo{
@@ -338,9 +329,21 @@ func formatDeltaMB(initial uint64, measured uint64) string {
 	return fmt.Sprintf("%+d MB", delta)
 }
 
-func recommendationForModel(fitPolicy string, initialCpuMB uint64, measuredCpuMB uint64) (string, string) {
+func recommendationForModel(fitPolicy string, initialCpuMB uint64, measuredCpuMB uint64, cpuMoeCount int, hasMeasurements bool) (string, string) {
 	if strings.EqualFold(fitPolicy, "spill") {
 		return "spill (configured)", ""
+	}
+	if strings.EqualFold(fitPolicy, "cpu_moe") {
+		if cpuMoeCount > 0 {
+			if hasMeasurements {
+				return "cpu_moe (configured)", fmt.Sprintf("%d layers offloaded to CPU", cpuMoeCount)
+			}
+			return "cpu_moe (configured)", fmt.Sprintf("%d layers will offload to CPU (not yet run)", cpuMoeCount)
+		}
+		return "cpu_moe (configured)", "No cpuMoe count set"
+	}
+	if !hasMeasurements {
+		return "evict_to_fit (default)", "Not yet run"
 	}
 	recommendation := "evict_to_fit (no --fit)"
 	if measuredCpuMB > 0 && measuredCpuMB > initialCpuMB {
@@ -369,7 +372,8 @@ func (pm *ProxyManager) uiRecommendationData() ([]UIRecommendationModel, []strin
 		var measuredVram uint64
 		var measuredCpu uint64
 		assignedGPU := -1
-		processGroup := pm.findGroupByModelName(modelID)
+		hasMeasurements := false
+		processGroup := pm.findProcessGroupByModelID(modelID)
 		if processGroup != nil {
 			process := processGroup.processes[modelID]
 			if process != nil {
@@ -380,16 +384,13 @@ func (pm *ProxyManager) uiRecommendationData() ([]UIRecommendationModel, []strin
 					measuredVram = process.MeasuredVramMB()
 					measuredCpu = process.MeasuredCpuMB()
 					assignedGPU = process.AssignedGPU()
+					hasMeasurements = true
 				}
 			}
 		}
 
-		if measuredVram == 0 && measuredCpu == 0 {
-			continue
-		}
-
 		fitPolicy := strings.TrimSpace(modelConfig.FitPolicy)
-		recommendation, note := recommendationForModel(fitPolicy, modelConfig.InitialCpuMB, measuredCpu)
+		recommendation, note := recommendationForModel(fitPolicy, modelConfig.InitialCpuMB, measuredCpu, modelConfig.CpuMoe, hasMeasurements)
 
 		recommendations = append(recommendations, UIRecommendationModel{
 			ID:                 modelID,
@@ -405,14 +406,18 @@ func (pm *ProxyManager) uiRecommendationData() ([]UIRecommendationModel, []strin
 			HighlightCpuDelta:  modelConfig.InitialCpuMB > 0 && measuredCpu > 0 && modelConfig.InitialCpuMB != measuredCpu,
 			Recommendation:     recommendation,
 			RecommendationNote: note,
+			CpuMoeCount:        modelConfig.CpuMoe,
+			HasMeasurements:    hasMeasurements,
 		})
 
-		totalMeasuredVram += measuredVram
-		if !strings.EqualFold(fitPolicy, "spill") {
-			totalMeasuredHost += measuredCpu
-		}
-		if assignedGPU >= 0 && measuredVram > 0 {
-			perGPUUsage[assignedGPU] += measuredVram
+		if hasMeasurements {
+			totalMeasuredVram += measuredVram
+			if !strings.EqualFold(fitPolicy, "spill") {
+				totalMeasuredHost += measuredCpu
+			}
+			if assignedGPU >= 0 && measuredVram > 0 {
+				perGPUUsage[assignedGPU] += measuredVram
+			}
 		}
 	}
 

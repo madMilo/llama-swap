@@ -21,34 +21,63 @@ if len(RecommendationModels) > 0
           th Recommended fit
       tbody
         each $model in RecommendationModels
-          tr
-            td
-              if $model.Name != ""
-                div #{$model.Name}
-                div.topcoat-muted #{$model.ID}
+          if $model.HasMeasurements
+            tr
+              td
+                if $model.Name != ""
+                  div #{$model.Name}
+                  div.topcoat-muted #{$model.ID}
+                else
+                  | #{$model.ID}
+              td #{$model.InitialVramMB}
+              td #{$model.MeasuredVramMB}
+              if $model.HighlightVramDelta
+                td.recommendations-mismatch #{$model.VramDeltaMB}
               else
-                | #{$model.ID}
-            td #{$model.InitialVramMB}
-            td #{$model.MeasuredVramMB}
-            if $model.HighlightVramDelta
-              td.recommendations-mismatch #{$model.VramDeltaMB}
-            else
-              td #{$model.VramDeltaMB}
-            td #{$model.InitialCpuMB}
-            td #{$model.MeasuredCpuMB}
-            if $model.HighlightCpuDelta
-              td.recommendations-mismatch #{$model.CpuDeltaMB}
-            else
-              td #{$model.CpuDeltaMB}
-            td
-              if $model.FitPolicy != ""
-                | #{$model.FitPolicy}
+                td #{$model.VramDeltaMB}
+              td #{$model.InitialCpuMB}
+              td #{$model.MeasuredCpuMB}
+              if $model.HighlightCpuDelta
+                td.recommendations-mismatch #{$model.CpuDeltaMB}
               else
+                td #{$model.CpuDeltaMB}
+              td
+                if $model.FitPolicy != ""
+                  | #{$model.FitPolicy}
+                else
+                  span.topcoat-muted —
+              td
+                div #{$model.Recommendation}
+                if $model.RecommendationNote != ""
+                  div.topcoat-muted #{$model.RecommendationNote}
+        each $model in RecommendationModels
+          if !$model.HasMeasurements
+            tr.recommendations-unmeasured
+              td
+                if $model.Name != ""
+                  div #{$model.Name}
+                  div.topcoat-muted #{$model.ID}
+                else
+                  | #{$model.ID}
+              td #{$model.InitialVramMB}
+              td
                 span.topcoat-muted —
-            td
-              div #{$model.Recommendation}
-              if $model.RecommendationNote != ""
-                div.topcoat-muted #{$model.RecommendationNote}
+              td
+                span.topcoat-muted —
+              td #{$model.InitialCpuMB}
+              td
+                span.topcoat-muted —
+              td
+                span.topcoat-muted —
+              td
+                if $model.FitPolicy != ""
+                  | #{$model.FitPolicy}
+                else
+                  span.topcoat-muted —
+              td
+                div #{$model.Recommendation}
+                if $model.RecommendationNote != ""
+                  div.topcoat-muted #{$model.RecommendationNote}
 else
   div.topcoat-card.empty-state
-    p.topcoat-muted No measured footprints yet. Start a model to collect measurements.
+    p.topcoat-muted No models configured yet.

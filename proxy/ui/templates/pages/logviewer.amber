@@ -21,5 +21,5 @@ block content
         a.topcoat-button[href="/ui/logviewer?view=upstream"] Upstream
       a.topcoat-button[href="/ui/logviewer?view=#{$.LogViewerMode}"] Refresh logs
   p.page-description Inspect proxy and upstream log streams in parallel or individually.
-  div#logviewer-content[data-htmz-get="/ui/partials/logviewer?view=#{$.LogViewerMode}"][data-htmz-target="#logviewer-content"][data-htmz-poll="5000"]
+  div#logviewer-content
     import ../partials/logviewer

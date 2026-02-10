@@ -125,7 +125,7 @@ func TestProxyManager_DualGPUIntegration(t *testing.T) {
 		RecordedAt: time.Now(),
 	})
 
-	processGroup := proxy.findGroupByModelName("model-a")
+	processGroup := proxy.findProcessGroupByModelID("model-a")
 	if processGroup == nil {
 		t.Fatal("expected process group for model-a")
 	}

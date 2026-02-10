@@ -256,10 +256,6 @@ func NewWithAllocator(proxyConfig config.Config, allocator GPUAllocator) *ProxyM
 	return pm
 }
 
-func normalizeModelGroups(cfg config.Config) config.Config {
-	return cfg
-}
-
 func (pm *ProxyManager) setupGinEngine() {
 
 	pm.ginEngine.Use(func(c *gin.Context) {
@@ -401,7 +397,6 @@ func (pm *ProxyManager) setupGinEngine() {
 	pm.ginEngine.GET("/ui/activity", pm.uiActivityPageHandler)
 	pm.ginEngine.GET("/ui/recommendations", pm.uiRecommendationsPageHandler)
 	pm.ginEngine.GET("/ui/logviewer", pm.uiLogViewerPageHandler)
-	pm.ginEngine.GET("/ui/logs", pm.uiLogsPageHandler)
 	pm.ginEngine.GET("/ui/playground", pm.uiPlaygroundPageHandler)
 	pm.ginEngine.GET("/ui/partials/models", pm.uiModelsPartialHandler)
 	pm.ginEngine.GET("/ui/partials/running", pm.uiRunningPartialHandler)
@@ -410,7 +405,6 @@ func (pm *ProxyManager) setupGinEngine() {
 	pm.ginEngine.GET("/ui/partials/activity/capture/clear", pm.uiActivityCaptureClearPartialHandler)
 	pm.ginEngine.GET("/ui/partials/activity/capture/:id", pm.uiActivityCapturePartialHandler)
 	pm.ginEngine.GET("/ui/partials/logviewer", pm.uiLogViewerPartialHandler)
-	pm.ginEngine.GET("/ui/partials/logs", pm.uiLogsPartialHandler)
 	pm.ginEngine.GET("/ui/partials/playground/chat", pm.uiPlaygroundChatPartialHandler)
 	pm.ginEngine.GET("/ui/partials/playground/images", pm.uiPlaygroundImagesPartialHandler)
 	pm.ginEngine.GET("/ui/partials/playground/speech", pm.uiPlaygroundSpeechPartialHandler)
@@ -1087,8 +1081,8 @@ func (pm *ProxyManager) findProcessByModelName(modelName string) *Process {
 	return nil
 }
 
-func (pm *ProxyManager) findGroupByModelName(modelName string) *ProcessGroup {
-	if pg, ok := pm.processGroups[modelName]; ok {
+func (pm *ProxyManager) findProcessGroupByModelID(modelID string) *ProcessGroup {
+	if pg, ok := pm.processGroups[modelID]; ok {
 		return pg
 	}
 	return nil

@@ -330,8 +330,12 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 			}
 		}
 
-		if err := applyFitPolicy(&modelConfig); err != nil {
+		injectedFlags, err := applyFitPolicy(&modelConfig)
+		if err != nil {
 			return Config{}, fmt.Errorf("model %s: %w", modelId, err)
+		}
+		if len(injectedFlags) > 0 {
+			fmt.Printf("Applied fit policy '%s' to model '%s': injected flags: %v\n", modelConfig.FitPolicy, modelId, injectedFlags)
 		}
 
 		// Handle PORT macro - only allocate if cmd uses it
@@ -532,39 +536,43 @@ func AddDefaultGroupToConfig(config Config) Config {
 	return config
 }
 
-func applyFitPolicy(modelConfig *ModelConfig) error {
+func applyFitPolicy(modelConfig *ModelConfig) ([]string, error) {
 	fitPolicy := strings.ToLower(strings.TrimSpace(modelConfig.FitPolicy))
 	if fitPolicy == "" {
-		return nil
+		return nil, nil
 	}
 
 	switch fitPolicy {
 	case "spill", "evict_to_fit", "cpu_moe":
 	default:
-		return fmt.Errorf("fitPolicy must be one of: spill, evict_to_fit, cpu_moe")
+		return nil, fmt.Errorf("fitPolicy must be one of: spill, evict_to_fit, cpu_moe")
 	}
 
 	cmd := modelConfig.Cmd
 	hasFit := strings.Contains(cmd, "--fit")
 	hasCpuMoe := strings.Contains(cmd, "--n-cpu-moe") || strings.Contains(cmd, "--cpu-moe")
+	var injected []string
 
 	if fitPolicy == "evict_to_fit" {
-		return nil
+		return nil, nil
 	}
 
 	if !hasFit {
 		if strings.TrimSpace(cmd) == "" {
-			return fmt.Errorf("fitPolicy %s requires cmd to be set", fitPolicy)
+			return nil, fmt.Errorf("fitPolicy %s requires cmd to be set", fitPolicy)
 		}
 		cmd = strings.TrimSpace(cmd) + "\n--fit"
+		injected = append(injected, "--fit")
 	}
 
 	if fitPolicy == "cpu_moe" && modelConfig.CpuMoe > 0 && !hasCpuMoe {
-		cmd = strings.TrimSpace(cmd) + fmt.Sprintf("\n--n-cpu-moe %d", modelConfig.CpuMoe)
+		flag := fmt.Sprintf("--n-cpu-moe %d", modelConfig.CpuMoe)
+		cmd = strings.TrimSpace(cmd) + "\n" + flag
+		injected = append(injected, flag)
 	}
 
 	modelConfig.Cmd = cmd
-	return nil
+	return injected, nil
 }
 
 func SanitizeCommand(cmdStr string) ([]string, error) {

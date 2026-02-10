@@ -175,30 +175,11 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 }
 
 func (s *Scheduler) selectEvictions(process *Process, assigned []*Process, freeMB, requiredMB uint64) ([]*Process, bool) {
-	if hasUnknownFootprint(assigned) {
-		return nil, false
-	}
-
-	if process.GroupExclusive {
-		evict, ok := evictAllIdle(assigned)
-		if !ok {
-			return nil, false
+	// Log warning if any assigned processes have unknown footprint
+	for _, p := range assigned {
+		if p.MeasuredVramMB() == 0 {
+			s.logger.Warnf("<%s> process has unknown VRAM footprint; eviction calculations may be conservative", p.ID)
 		}
-		if freeMB+sumVram(evict) < requiredMB {
-			return nil, false
-		}
-		return evict, true
-	}
-
-	if hasExclusiveProcess(assigned) {
-		evict, ok := evictAllIdle(assigned)
-		if !ok {
-			return nil, false
-		}
-		if freeMB+sumVram(evict) < requiredMB {
-			return nil, false
-		}
-		return evict, true
 	}
 
 	if freeMB >= requiredMB {
@@ -233,15 +214,6 @@ func processesOnGPU(processes []*Process, gpuIndex int) []*Process {
 	return assigned
 }
 
-func hasExclusiveProcess(processes []*Process) bool {
-	for _, process := range processes {
-		if process.GroupExclusive {
-			return true
-		}
-	}
-	return false
-}
-
 func idleProcesses(processes []*Process) []*Process {
 	var idle []*Process
 	for _, process := range processes {
@@ -250,34 +222,6 @@ func idleProcesses(processes []*Process) []*Process {
 		}
 	}
 	return idle
-}
-
-func evictAllIdle(processes []*Process) ([]*Process, bool) {
-	var evict []*Process
-	for _, process := range processes {
-		if process.InFlightRequestsCount() != 0 {
-			return nil, false
-		}
-		evict = append(evict, process)
-	}
-	return evict, true
-}
-
-func sumVram(processes []*Process) uint64 {
-	var total uint64
-	for _, process := range processes {
-		total += process.MeasuredVramMB()
-	}
-	return total
-}
-
-func hasUnknownFootprint(processes []*Process) bool {
-	for _, process := range processes {
-		if process.MeasuredVramMB() == 0 {
-			return true
-		}
-	}
-	return false
 }
 
 func (s *Scheduler) applyVramCaps(gpus []GPUInfo) []GPUInfo {
@@ -325,18 +269,16 @@ func (s *Scheduler) ensureHostRamCapacity(process *Process) error {
 	}
 
 	running := s.provider()
-	total, ok := sumCpuMB(running)
-	if !ok {
-		s.logger.Warnf("unable to fully account host RAM usage for running models; skipping host RAM cap check")
-		s.logger.Infof("<%s> host RAM scheduling decision: allow (running host RAM usage incomplete)", process.ID)
-		return nil
+	total, allMeasured := sumCpuMB(running)
+	if !allMeasured {
+		s.logger.Warnf("some running processes have unmeasured host RAM usage; enforcement based on partial measurements")
 	}
 
 	if total+requiredMB > s.hostRamCapMB {
-		s.logger.Infof("<%s> host RAM scheduling decision: deny used_mb=%d required_mb=%d cap_mb=%d", process.ID, total, requiredMB, s.hostRamCapMB)
+		s.logger.Infof("<%s> host RAM scheduling decision: deny used_mb=%d (measured) required_mb=%d cap_mb=%d", process.ID, total, requiredMB, s.hostRamCapMB)
 		return ErrInsufficientHostRAM
 	}
-	s.logger.Infof("<%s> host RAM scheduling decision: allow used_mb=%d required_mb=%d cap_mb=%d", process.ID, total, requiredMB, s.hostRamCapMB)
+	s.logger.Infof("<%s> host RAM scheduling decision: allow used_mb=%d (measured) required_mb=%d cap_mb=%d", process.ID, total, requiredMB, s.hostRamCapMB)
 	return nil
 }
 
@@ -356,15 +298,17 @@ func shouldAccountHostRam(process *Process) bool {
 
 func sumCpuMB(processes []*Process) (uint64, bool) {
 	var total uint64
+	allMeasured := true
 	for _, process := range processes {
 		if !shouldAccountHostRam(process) {
 			continue
 		}
 		used := process.MeasuredCpuMB()
 		if used == 0 {
-			return 0, false
+			allMeasured = false
+			continue
 		}
 		total += used
 	}
-	return total, true
+	return total, allMeasured
 }

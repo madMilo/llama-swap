@@ -153,28 +153,6 @@ func TestSchedulerScheduleProcess_InsufficientVRAM(t *testing.T) {
 	require.ErrorIs(t, err, ErrInsufficientVRAM)
 }
 
-func TestSchedulerScheduleProcess_GroupExclusive(t *testing.T) {
-	tracker := NewMemoryTracker()
-	allocator := &fakeGPUAllocator{gpus: []GPUInfo{{Index: 0, FreeMB: 100, TotalMB: 1000}}}
-	p1 := newTestProcess(t, "p1", "evict_to_fit", 200, 100, tracker)
-	p2 := newTestProcess(t, "p2", "evict_to_fit", 200, 100, tracker)
-	readyOnGPU(p1, 0)
-	readyOnGPU(p2, 0)
-
-	candidate := newTestProcess(t, "candidate", "evict_to_fit", 400, 100, tracker)
-	candidate.GroupExclusive = true
-
-	p2.inFlightRequestsCount.Add(1)
-	scheduler := NewScheduler(allocator, testLogger, func() []*Process { return []*Process{p1, p2} }, SchedulerOptions{})
-	err := scheduler.ScheduleProcess(candidate)
-	require.ErrorIs(t, err, ErrInsufficientVRAM)
-
-	p2.inFlightRequestsCount.Add(-1)
-	err = scheduler.ScheduleProcess(candidate)
-	require.NoError(t, err)
-	require.Equal(t, 0, candidate.AssignedGPU())
-}
-
 func TestSchedulerSelectEvictions(t *testing.T) {
 	tracker := NewMemoryTracker()
 	allocator := &fakeGPUAllocator{}
@@ -185,13 +163,6 @@ func TestSchedulerSelectEvictions(t *testing.T) {
 	_, ok := scheduler.selectEvictions(newTestProcess(t, "candidate", "evict_to_fit", 100, 0, tracker), []*Process{unknown}, 0, 100)
 	require.False(t, ok)
 
-	exclusive := newTestProcess(t, "exclusive", "evict_to_fit", 100, 0, tracker)
-	exclusive.GroupExclusive = true
-	readyOnGPU(exclusive, 0)
-	evict, ok := scheduler.selectEvictions(newTestProcess(t, "candidate2", "evict_to_fit", 150, 0, tracker), []*Process{exclusive}, 75, 150)
-	require.True(t, ok)
-	require.Len(t, evict, 1)
-
 	busy := newTestProcess(t, "busy", "evict_to_fit", 100, 0, tracker)
 	readyOnGPU(busy, 0)
 	busy.inFlightRequestsCount.Add(1)
@@ -201,7 +172,7 @@ func TestSchedulerSelectEvictions(t *testing.T) {
 
 	free := newTestProcess(t, "free", "evict_to_fit", 100, 0, tracker)
 	readyOnGPU(free, 0)
-	evict, ok = scheduler.selectEvictions(newTestProcess(t, "candidate3", "evict_to_fit", 50, 0, tracker), []*Process{free}, 200, 50)
+	evict, ok := scheduler.selectEvictions(newTestProcess(t, "candidate3", "evict_to_fit", 50, 0, tracker), []*Process{free}, 200, 50)
 	require.True(t, ok)
 	require.Empty(t, evict)
 
@@ -211,10 +182,10 @@ func TestSchedulerSelectEvictions(t *testing.T) {
 	readyOnGPU(newer, 0)
 	older.setLastRequestHandled(time.Now().Add(-2 * time.Hour))
 	newer.setLastRequestHandled(time.Now().Add(-1 * time.Hour))
-	evict, ok = scheduler.selectEvictions(newTestProcess(t, "candidate4", "evict_to_fit", 60, 0, tracker), []*Process{newer, older}, 10, 60)
-	require.True(t, ok)
-	require.Len(t, evict, 2)
-	require.Equal(t, older, evict[0])
+	evict2, ok2 := scheduler.selectEvictions(newTestProcess(t, "candidate4", "evict_to_fit", 60, 0, tracker), []*Process{newer, older}, 10, 60)
+	require.True(t, ok2)
+	require.Len(t, evict2, 2)
+	require.Equal(t, older, evict2[0])
 }
 
 func TestSchedulerApplyVramCaps(t *testing.T) {

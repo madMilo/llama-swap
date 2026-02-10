@@ -88,9 +88,6 @@ type Process struct {
 	memoryTracker     *MemoryTracker
 	memorySignature   string
 	observedFootprint MemoryFootprint
-
-	GroupID        string
-	GroupExclusive bool
 }
 
 func NewProcess(ID string, healthCheckTimeout int, config config.ModelConfig, processLogger *LogMonitor, proxyLogger *LogMonitor) *Process {
