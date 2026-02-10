@@ -54,3 +54,23 @@ func TestProcess_MemoryTrackerUpdates(t *testing.T) {
 		t.Fatalf("expected tracker footprint for signature %s", signature)
 	}
 }
+
+func TestProcess_RuntimeFootprint_ExcludesInitialHintsUntilObserved(t *testing.T) {
+	cfg := getTestSimpleResponderConfig("runtime-footprint")
+	cfg.InitialVramMB = 22000
+	cfg.InitialCpuMB = 120000
+
+	process := NewProcess("runtime-footprint", 1, cfg, testLogger, testLogger)
+	tracker := NewMemoryTracker()
+	signature := signatureForModel("runtime-footprint", cfg.Cmd)
+	process.SetMemoryTracker(tracker, signature)
+
+	_, ok := process.RuntimeFootprint()
+	assert.False(t, ok)
+
+	tracker.Set(signature, MemoryFootprint{VramMB: 1616, CpuMB: 0, RecordedAt: time.Now()})
+	footprint, ok := process.RuntimeFootprint()
+	assert.True(t, ok)
+	assert.Equal(t, uint64(1616), footprint.VramMB)
+	assert.Equal(t, uint64(0), footprint.CpuMB)
+}

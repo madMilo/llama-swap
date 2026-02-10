@@ -75,21 +75,28 @@ func TestProxyManager_DualGPUIntegration(t *testing.T) {
 	modelDual.InitialCpuMB = dualInitialCPU
 	modelDual.Env = []string{"CUDA_VISIBLE_DEVICES=0,1"}
 
+	modelUnused := getTestSimpleResponderConfig("model-unused")
+	modelUnused.Name = "Unused seeded model"
+	modelUnused.FitPolicy = "evict_to_fit"
+	modelUnused.InitialVramMB = singleInitialVRAM
+	modelUnused.InitialCpuMB = hostCapMB
+
 	testConfig := config.AddDefaultGroupToConfig(config.Config{
 		HealthCheckTimeout: 15,
 		LogLevel:           "error",
 		GpuVramCapsMB:      []uint64{gpuCapMB, gpuCapMB},
 		HostRamCapMB:       hostCapMB,
 		Models: map[string]config.ModelConfig{
-			"model-a":    modelA,
-			"model-b":    modelB,
-			"model-dual": modelDual,
+			"model-a":      modelA,
+			"model-b":      modelB,
+			"model-dual":   modelDual,
+			"model-unused": modelUnused,
 		},
 		Groups: map[string]config.GroupConfig{
 			"all": {
 				Swap:      false,
 				Exclusive: false,
-				Members:   []string{"model-a", "model-b", "model-dual"},
+				Members:   []string{"model-a", "model-b", "model-dual", "model-unused"},
 			},
 		},
 	})
@@ -167,4 +174,5 @@ func TestProxyManager_DualGPUIntegration(t *testing.T) {
 	assert.Contains(t, body, "20000 MB")
 	assert.Contains(t, body, "23347 MB")
 	assert.Contains(t, body, "46759 MB")
+	assert.NotContains(t, body, "model-unused")
 }

@@ -59,10 +59,10 @@ func (t *MemoryTracker) ObserveLog(signature string, line string) (MemoryFootpri
 }
 
 var (
-	plainVRAMRegex = regexp.MustCompile(`(?i)(vram|gpu)\s+(used|memory)\s*[:=]\s*([0-9.]+)\s*(mi?b|gi?b)`)
-	plainCPURex    = regexp.MustCompile(`(?i)(cpu|ram)\s+(used|memory)\s*[:=]\s*([0-9.]+)\s*(mi?b|gi?b)`)
-	llamaVRAMRegex = regexp.MustCompile(`(?i)(cuda|vram|gpu)[^\n]*?([0-9]+(?:\.[0-9]+)?)\s*(mi?b|gi?b)`)
-	llamaCPURex    = regexp.MustCompile(`(?i)(cpu|host|ram)[^\n]*?([0-9]+(?:\.[0-9]+)?)\s*(mi?b|gi?b)`)
+	plainVRAMRegex = regexp.MustCompile(`(?i)\b(vram|gpu)\b\s+(used|memory)\s*[:=]\s*([0-9.]+)\s*(mi?b|gi?b)`)
+	plainCPURex    = regexp.MustCompile(`(?i)\b(cpu|ram)\b\s+(used|memory)\s*[:=]\s*([0-9.]+)\s*(mi?b|gi?b)`)
+	llamaVRAMRegex = regexp.MustCompile(`(?i)\b(cuda|vram|gpu)\b[^\n]*?([0-9]+(?:\.[0-9]+)?)\s*(mi?b|gi?b)`)
+	llamaCPURex    = regexp.MustCompile(`(?i)\b(cpu|host|ram)\b[^\n]*?([0-9]+(?:\.[0-9]+)?)\s*(mi?b|gi?b)`)
 )
 
 func parseMemoryFromLog(line string) (MemoryFootprint, bool) {
