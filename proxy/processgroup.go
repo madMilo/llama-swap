@@ -3,7 +3,6 @@ package proxy
 import (
 	"fmt"
 	"net/http"
-	"slices"
 	"sync"
 
 	"github.com/mostlygeek/llama-swap/proxy/config"
@@ -12,11 +11,7 @@ import (
 type ProcessGroup struct {
 	sync.Mutex
 
-	config     config.Config
-	id         string
-	swap       bool
-	exclusive  bool
-	persistent bool
+	id string
 
 	proxyLogger    *LogMonitor
 	upstreamLogger *LogMonitor
@@ -29,35 +24,25 @@ type ProcessGroup struct {
 	tracker   *MemoryTracker
 }
 
-func NewProcessGroup(id string, config config.Config, proxyLogger *LogMonitor, upstreamLogger *LogMonitor) *ProcessGroup {
-	groupConfig, ok := config.Groups[id]
-	if !ok {
-		panic("Unable to find configuration for group id: " + id)
-	}
-
+func NewProcessGroup(modelID string, cfg config.Config, proxyLogger *LogMonitor, upstreamLogger *LogMonitor) *ProcessGroup {
 	pg := &ProcessGroup{
-		id:             id,
-		config:         config,
-		swap:           groupConfig.Swap,
-		exclusive:      groupConfig.Exclusive,
-		persistent:     groupConfig.Persistent,
+		id:             modelID,
 		proxyLogger:    proxyLogger,
 		upstreamLogger: upstreamLogger,
 		processes:      make(map[string]*Process),
 	}
 
-	// Create a Process for each member in the group
-	for _, modelID := range groupConfig.Members {
-		modelConfig, modelID, _ := pg.config.FindConfig(modelID)
-		processLogger := NewLogMonitorWriter(upstreamLogger)
-		process := NewProcess(modelID, pg.config.HealthCheckTimeout, modelConfig, processLogger, pg.proxyLogger)
-		process.GroupID = id
-		process.GroupExclusive = groupConfig.Exclusive
-		if pg.tracker != nil {
-			process.SetMemoryTracker(pg.tracker, signatureForModel(modelID, modelConfig.Cmd))
-		}
-		pg.processes[modelID] = process
+	modelConfig, _, found := cfg.FindConfig(modelID)
+	if !found {
+		panic("Unable to find model configuration for model id: " + modelID)
 	}
+
+	processLogger := NewLogMonitorWriter(upstreamLogger)
+	process := NewProcess(modelID, cfg.HealthCheckTimeout, modelConfig, processLogger, pg.proxyLogger)
+	if pg.tracker != nil {
+		process.SetMemoryTracker(pg.tracker, signatureForModel(modelID, modelConfig.Cmd))
+	}
+	pg.processes[modelID] = process
 
 	return pg
 }
@@ -87,41 +72,20 @@ func (pg *ProcessGroup) SetMemoryTracker(tracker *MemoryTracker) {
 // ProxyRequest proxies a request to the specified model
 func (pg *ProcessGroup) ProxyRequest(modelID string, writer http.ResponseWriter, request *http.Request) error {
 	if !pg.HasMember(modelID) {
-		return fmt.Errorf("model %s not part of group %s", modelID, pg.id)
+		return fmt.Errorf("model %s not found", modelID)
 	}
-
-	if pg.swap {
-		pg.Lock()
-		if pg.lastUsedProcess != modelID {
-
-			// is there something already running?
-			if pg.lastUsedProcess != "" {
-				pg.processes[pg.lastUsedProcess].Stop()
-			}
-
-			// wait for the request to the new model to be fully handled
-			// and prevent race conditions see issue #277
-			pg.processes[modelID].ProxyRequest(writer, request)
-			pg.lastUsedProcess = modelID
-
-			// short circuit and exit
-			pg.Unlock()
-			return nil
-		}
-		pg.Unlock()
-	}
-
 	pg.processes[modelID].ProxyRequest(writer, request)
 	return nil
 }
 
 func (pg *ProcessGroup) HasMember(modelName string) bool {
-	return slices.Contains(pg.config.Groups[pg.id].Members, modelName)
+	_, ok := pg.processes[modelName]
+	return ok
 }
 
 func (pg *ProcessGroup) GetMember(modelName string) (*Process, bool) {
-	if pg.HasMember(modelName) {
-		return pg.processes[modelName], true
+	if process, ok := pg.processes[modelName]; ok {
+		return process, true
 	}
 	return nil, false
 }
@@ -157,7 +121,6 @@ func (pg *ProcessGroup) StopProcesses(strategy StopStrategy) {
 		return
 	}
 
-	// stop Processes in parallel
 	var wg sync.WaitGroup
 	for _, process := range pg.processes {
 		wg.Add(1)

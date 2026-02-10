@@ -14,17 +14,17 @@ import (
 )
 
 type Model struct {
-	Id              string `json:"id"`
-	Name            string `json:"name"`
-	Description     string `json:"description"`
-	State           string `json:"state"`
-	Unlisted        bool   `json:"unlisted"`
-	PeerID          string `json:"peerID"`
-	MeasuredVramMB  uint64 `json:"measuredVramMB,omitempty"`
-	MeasuredCpuMB   uint64 `json:"measuredCpuMB,omitempty"`
-	FitPolicy       string `json:"fitPolicy,omitempty"`
-	InitialVramMB   uint64 `json:"initialVramMB,omitempty"`
-	InitialCpuMB    uint64 `json:"initialCpuMB,omitempty"`
+	Id             string `json:"id"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	State          string `json:"state"`
+	Unlisted       bool   `json:"unlisted"`
+	PeerID         string `json:"peerID"`
+	MeasuredVramMB uint64 `json:"measuredVramMB,omitempty"`
+	MeasuredCpuMB  uint64 `json:"measuredCpuMB,omitempty"`
+	FitPolicy      string `json:"fitPolicy,omitempty"`
+	InitialVramMB  uint64 `json:"initialVramMB,omitempty"`
+	InitialCpuMB   uint64 `json:"initialCpuMB,omitempty"`
 }
 
 func addApiHandlers(pm *ProxyManager) {
@@ -64,32 +64,29 @@ func (pm *ProxyManager) getModelStatus() []Model {
 	// Iterate over sorted keys
 	for _, modelID := range modelIDs {
 		// Get process state
-		processGroup := pm.findGroupByModelName(modelID)
+		process := pm.findProcessByModelName(modelID)
 		state := "unknown"
 		var measuredVramMB uint64
 		var measuredCpuMB uint64
-		if processGroup != nil {
-			process := processGroup.processes[modelID]
-			if process != nil {
-				measuredVramMB = process.MeasuredVramMB()
-				measuredCpuMB = process.MeasuredCpuMB()
-				var stateStr string
-				switch process.CurrentState() {
-				case StateReady:
-					stateStr = "ready"
-				case StateStarting:
-					stateStr = "starting"
-				case StateStopping:
-					stateStr = "stopping"
-				case StateShutdown:
-					stateStr = "shutdown"
-				case StateStopped:
-					stateStr = "stopped"
-				default:
-					stateStr = "unknown"
-				}
-				state = stateStr
+		if process != nil {
+			measuredVramMB = process.MeasuredVramMB()
+			measuredCpuMB = process.MeasuredCpuMB()
+			var stateStr string
+			switch process.CurrentState() {
+			case StateReady:
+				stateStr = "ready"
+			case StateStarting:
+				stateStr = "starting"
+			case StateStopping:
+				stateStr = "stopping"
+			case StateShutdown:
+				stateStr = "shutdown"
+			case StateStopped:
+				stateStr = "stopped"
+			default:
+				stateStr = "unknown"
 			}
+			state = stateStr
 		}
 		models = append(models, Model{
 			Id:             modelID,
@@ -250,18 +247,14 @@ func (pm *ProxyManager) apiUnloadSingleModelHandler(c *gin.Context) {
 		return
 	}
 
-	processGroup := pm.findGroupByModelName(realModelName)
-	if processGroup == nil {
-		pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("process group not found for model %s", requestedModel))
+	process := pm.findProcessByModelName(realModelName)
+	if process == nil {
+		pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("process not found for model %s", requestedModel))
 		return
 	}
 
-	if err := processGroup.StopProcess(realModelName, StopImmediately); err != nil {
-		pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error stopping process: %s", err.Error()))
-		return
-	} else {
-		c.String(http.StatusOK, "OK")
-	}
+	process.StopImmediately()
+	c.String(http.StatusOK, "OK")
 }
 
 func (pm *ProxyManager) apiGetVersion(c *gin.Context) {

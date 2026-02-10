@@ -44,6 +44,37 @@ func CreateTestResponseRecorder() *TestResponseRecorder {
 	}
 }
 
+func TestNormalizeModelGroups_IgnoresConfiguredGroups(t *testing.T) {
+	cfg := config.Config{
+		Models: map[string]config.ModelConfig{
+			"model1": getTestSimpleResponderConfig("model1"),
+			"model2": getTestSimpleResponderConfig("model2"),
+		},
+		Groups: map[string]config.GroupConfig{
+			"legacy": {
+				Swap:      true,
+				Exclusive: true,
+				Members:   []string{"model1", "model2"},
+			},
+		},
+	}
+
+	normalized := normalizeModelGroups(cfg)
+	assert.Len(t, normalized.Groups, 2)
+
+	g1, ok := normalized.Groups["model1"]
+	assert.True(t, ok)
+	assert.False(t, g1.Swap)
+	assert.False(t, g1.Exclusive)
+	assert.Equal(t, []string{"model1"}, g1.Members)
+
+	g2, ok := normalized.Groups["model2"]
+	assert.True(t, ok)
+	assert.False(t, g2.Swap)
+	assert.False(t, g2.Exclusive)
+	assert.Equal(t, []string{"model2"}, g2.Members)
+}
+
 func TestProxyManager_SwapProcessCorrectly(t *testing.T) {
 	config := config.AddDefaultGroupToConfig(config.Config{
 		HealthCheckTimeout: 15,

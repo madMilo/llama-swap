@@ -497,9 +497,11 @@ func AddDefaultGroupToConfig(config Config) Config {
 		Exclusive: true,
 		Members:   []string{},
 	}
-	// if groups is empty, create a default group and put
-	// all models into it
+	// if no groups are configured, default to a concurrent/non-exclusive group
+	// so models can be used side-by-side (e.g. multi-GPU hosts).
 	if len(config.Groups) == 0 {
+		defaultGroup.Swap = false
+		defaultGroup.Exclusive = false
 		for modelName := range config.Models {
 			defaultGroup.Members = append(defaultGroup.Members, modelName)
 		}

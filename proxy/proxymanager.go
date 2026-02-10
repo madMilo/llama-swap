@@ -185,11 +185,10 @@ func NewWithAllocator(proxyConfig config.Config, allocator GPUAllocator) *ProxyM
 		pm.uiTemplates = uiTemplates
 	}
 
-	// create the process groups
-	for groupID := range proxyConfig.Groups {
-		processGroup := NewProcessGroup(groupID, proxyConfig, proxyLogger, upstreamLogger)
+	for modelID := range proxyConfig.Models {
+		processGroup := NewProcessGroup(modelID, proxyConfig, proxyLogger, upstreamLogger)
 		processGroup.SetMemoryTracker(pm.memoryTracker)
-		pm.processGroups[groupID] = processGroup
+		pm.processGroups[modelID] = processGroup
 	}
 
 	shouldScheduleVram := hasVramModels(proxyConfig.Models)
@@ -255,6 +254,10 @@ func NewWithAllocator(proxyConfig config.Config, allocator GPUAllocator) *ProxyM
 	}
 
 	return pm
+}
+
+func normalizeModelGroups(cfg config.Config) config.Config {
+	return cfg
 }
 
 func (pm *ProxyManager) setupGinEngine() {
@@ -468,12 +471,17 @@ func (pm *ProxyManager) runningProcesses() []*Process {
 	processes := make([]*Process, 0)
 	for _, processGroup := range pm.processGroups {
 		for _, process := range processGroup.processes {
-			if process.CurrentState() == StateReady {
+			if processUsesSchedulerCapacity(process) {
 				processes = append(processes, process)
 			}
 		}
 	}
 	return processes
+}
+
+func processUsesSchedulerCapacity(process *Process) bool {
+	state := process.CurrentState()
+	return state == StateStarting || state == StateReady
 }
 
 func hasVramModels(models map[string]config.ModelConfig) bool {
@@ -506,20 +514,10 @@ func (pm *ProxyManager) Shutdown() {
 }
 
 func (pm *ProxyManager) swapProcessGroup(realModelName string) (*ProcessGroup, error) {
-	processGroup := pm.findGroupByModelName(realModelName)
-	if processGroup == nil {
-		return nil, fmt.Errorf("could not find process group for model %s", realModelName)
+	processGroup, ok := pm.processGroups[realModelName]
+	if !ok {
+		return nil, fmt.Errorf("could not find process for model %s", realModelName)
 	}
-
-	if processGroup.exclusive {
-		pm.proxyLogger.Debugf("Exclusive mode for group %s, stopping other process groups", processGroup.id)
-		for groupId, otherGroup := range pm.processGroups {
-			if groupId != processGroup.id && !otherGroup.persistent {
-				otherGroup.StopProcesses(StopWaitForInflightRequest)
-			}
-		}
-	}
-
 	return processGroup, nil
 }
 
@@ -1080,11 +1078,18 @@ func (pm *ProxyManager) listRunningProcessesHandler(context *gin.Context) {
 	context.JSON(http.StatusOK, response) // Always return 200 OK
 }
 
-func (pm *ProxyManager) findGroupByModelName(modelName string) *ProcessGroup {
-	for _, group := range pm.processGroups {
-		if group.HasMember(modelName) {
-			return group
+func (pm *ProxyManager) findProcessByModelName(modelName string) *Process {
+	if processGroup, ok := pm.processGroups[modelName]; ok {
+		if process, ok := processGroup.processes[modelName]; ok {
+			return process
 		}
+	}
+	return nil
+}
+
+func (pm *ProxyManager) findGroupByModelName(modelName string) *ProcessGroup {
+	if pg, ok := pm.processGroups[modelName]; ok {
+		return pg
 	}
 	return nil
 }
