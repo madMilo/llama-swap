@@ -64,8 +64,8 @@ models:
 	defaultGroup, exists := config.Groups["(default)"]
 	assert.True(t, exists, "default group should exist")
 	if assert.NotNil(t, defaultGroup, "default group should not be nil") {
-		assert.Equal(t, true, defaultGroup.Swap)
-		assert.Equal(t, true, defaultGroup.Exclusive)
+		assert.Equal(t, false, defaultGroup.Swap)
+		assert.Equal(t, false, defaultGroup.Exclusive)
 		assert.Equal(t, false, defaultGroup.Persistent)
 		assert.Equal(t, []string{"model1"}, defaultGroup.Members)
 	}

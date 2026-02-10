@@ -95,10 +95,8 @@ func (pm *ProxyManager) getLogger(logMonitorId string) (*LogMonitor, error) {
 		// search for a models specific logger using findModelInPath
 		// to handle model names with slashes (e.g., "author/model")
 		if _, name, _, found := pm.findModelInPath("/" + logMonitorId); found {
-			for _, group := range pm.processGroups {
-				if process, found := group.GetMember(name); found {
-					return process.Logger(), nil
-				}
+			if process := pm.findProcessByModelName(name); process != nil {
+				return process.Logger(), nil
 			}
 		}
 

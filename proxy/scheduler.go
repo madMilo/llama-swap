@@ -222,7 +222,7 @@ func (s *Scheduler) selectEvictions(process *Process, assigned []*Process, freeM
 func processesOnGPU(processes []*Process, gpuIndex int) []*Process {
 	var assigned []*Process
 	for _, process := range processes {
-		if process.AssignedGPU() == gpuIndex && process.CurrentState() == StateReady {
+		if process.AssignedGPU() == gpuIndex && processUsesSchedulerCapacity(process) {
 			assigned = append(assigned, process)
 		}
 	}
