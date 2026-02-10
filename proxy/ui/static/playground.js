@@ -11,7 +11,13 @@
 
     // Initialize playground
     init() {
-      this.sessionId = localStorage.getItem('playground-session-id') || 'default';
+      // Use sessionStorage (tab-specific) instead of localStorage (browser-wide)
+      this.sessionId = sessionStorage.getItem('playground-session-id');
+      if (!this.sessionId) {
+        // Generate unique session ID for this tab
+        this.sessionId = 'pg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('playground-session-id', this.sessionId);
+      }
       this.loadChatHistory();
     },
 

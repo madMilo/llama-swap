@@ -1,0 +1,17 @@
+# Minimal llama-swap configuration for testing
+
+healthCheckTimeout: 120
+logLevel: info
+logToStdout: "proxy"
+startPort: 10001
+sendLoadingState: true
+includeAliasesInList: false
+
+# Empty apiKeys array - no authentication required for testing
+apiKeys: []
+
+# Empty models map - can be populated later or via UI
+models: {}
+
+# Empty groups map
+groups: {}

@@ -508,6 +508,10 @@ func hasVramModels(models map[string]config.ModelConfig) bool {
 		if strings.EqualFold(model.FitPolicy, "evict_to_fit") {
 			return true
 		}
+		// cpu_moe models with VRAM hints also use GPU scheduling
+		if strings.EqualFold(model.FitPolicy, "cpu_moe") && model.InitialVramMB > 0 {
+			return true
+		}
 	}
 	return false
 }

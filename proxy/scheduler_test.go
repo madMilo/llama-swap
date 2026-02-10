@@ -233,6 +233,59 @@ func TestSchedulerEnsureHostRamCapacity(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestSchedulerScheduleProcess_CpuMoeWithVramHint(t *testing.T) {
+	tracker := NewMemoryTracker()
+	allocator := &fakeGPUAllocator{gpus: []GPUInfo{{Index: 0, FreeMB: 1000, TotalMB: 2000}}}
+	scheduler := NewScheduler(allocator, testLogger, func() []*Process { return nil }, SchedulerOptions{})
+
+	// Test 1: cpu_moe with VRAM hint gets GPU assignment
+	cpuMoeWithVram := newTestProcess(t, "cpu-moe-vram", "cpu_moe", 500, 100, tracker)
+	err := scheduler.ScheduleProcess(cpuMoeWithVram)
+	require.NoError(t, err)
+	require.Equal(t, 0, cpuMoeWithVram.AssignedGPU())
+	require.Equal(t, []string{"CUDA_VISIBLE_DEVICES=0"}, cpuMoeWithVram.runtimeEnv)
+
+	// Test 2: cpu_moe without VRAM hint stays CPU-only
+	cpuMoeWithoutVram := newTestProcess(t, "cpu-moe-no-vram", "cpu_moe", 0, 100, tracker)
+	err = scheduler.ScheduleProcess(cpuMoeWithoutVram)
+	require.NoError(t, err)
+	require.Equal(t, -1, cpuMoeWithoutVram.AssignedGPU())
+	require.Nil(t, cpuMoeWithoutVram.runtimeEnv)
+}
+
+func TestSchedulerScheduleProcess_CpuMoeEviction(t *testing.T) {
+	tracker := NewMemoryTracker()
+
+	existing := newTestProcess(t, "existing", "evict_to_fit", 1200, 100, tracker)
+	readyOnGPU(existing, 0)
+
+	allocator := &scenarioGPUAllocator{
+		gpus:     []GPUInfo{{Index: 0, FreeMB: 1000, TotalMB: 2000}},
+		provider: func() []*Process { return []*Process{existing} },
+	}
+	scheduler := NewScheduler(allocator, testLogger, allocator.provider, SchedulerOptions{})
+
+	cpuMoe := newTestProcess(t, "cpu-moe-evict", "cpu_moe", 1500, 100, tracker)
+	err := scheduler.ScheduleProcess(cpuMoe)
+	require.NoError(t, err)
+	require.Equal(t, 0, cpuMoe.AssignedGPU())
+	require.Equal(t, StateStopped, existing.CurrentState()) // Verify eviction occurred
+}
+
+func TestSchedulerScheduleProcess_CpuMoeHostRamAccounting(t *testing.T) {
+	tracker := NewMemoryTracker()
+
+	running := newTestProcess(t, "running", "cpu_moe", 200, 600, tracker)
+	readyOnGPU(running, 0)
+
+	allocator := &fakeGPUAllocator{gpus: []GPUInfo{{Index: 0, FreeMB: 1000, TotalMB: 2000}}}
+	scheduler := NewScheduler(allocator, testLogger, func() []*Process { return []*Process{running} }, SchedulerOptions{HostRamCapMB: 1000})
+
+	candidate := newTestProcess(t, "candidate", "cpu_moe", 300, 500, tracker)
+	err := scheduler.ScheduleProcess(candidate)
+	require.ErrorIs(t, err, ErrInsufficientHostRAM)
+}
+
 func TestSchedulerScheduleProcess_ScenarioSmallToLargeTwiceTracksExpectedResidentSet(t *testing.T) {
 	tracker := NewMemoryTracker()
 

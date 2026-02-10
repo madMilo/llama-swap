@@ -85,9 +85,13 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 		return nil
 	}
 
-	if fitPolicy != "evict_to_fit" {
+	if !requiresGpuScheduling(process) {
 		s.logger.Infof("<%s> scheduling decision: scheduled without GPU placement (fit_policy=%s)", process.ID, fitPolicy)
 		return nil
+	}
+
+	if fitPolicy == "cpu_moe" {
+		s.logger.Infof("<%s> hybrid cpu_moe scheduling: GPU layers with VRAM=%dMB, CPU experts", process.ID, process.MeasuredVramMB())
 	}
 
 	requiredMB := process.MeasuredVramMB()
@@ -117,7 +121,7 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 		}
 		process.SetAssignedGPU(chosen.Index)
 		process.SetRuntimeEnv([]string{fmt.Sprintf("CUDA_VISIBLE_DEVICES=%d", chosen.Index)})
-		s.logger.Infof("<%s> scheduling decision: scheduled on GPU %d (missing VRAM footprint)", process.ID, chosen.Index)
+		s.logger.Infof("<%s> scheduling decision: scheduled on GPU %d fit_policy=%s (missing VRAM footprint)", process.ID, chosen.Index, fitPolicy)
 		return nil
 	}
 
@@ -169,7 +173,7 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 
 	process.SetAssignedGPU(chosen.gpuIndex)
 	process.SetRuntimeEnv([]string{fmt.Sprintf("CUDA_VISIBLE_DEVICES=%d", chosen.gpuIndex)})
-	s.logger.Infof("<%s> scheduling decision: scheduled on GPU %d evicted=%d required_vram_mb=%d", process.ID, chosen.gpuIndex, len(chosen.evict), requiredMB)
+	s.logger.Infof("<%s> scheduling decision: scheduled on GPU %d fit_policy=%s evicted=%d required_vram_mb=%d", process.ID, chosen.gpuIndex, fitPolicy, len(chosen.evict), requiredMB)
 
 	return nil
 }
@@ -314,4 +318,23 @@ func sumCpuMB(processes []*Process) (uint64, bool) {
 		total += used
 	}
 	return total, allMeasured
+}
+
+// requiresGpuScheduling returns true if the process requires GPU scheduling
+// with eviction capabilities. This applies to evict_to_fit and cpu_moe models
+// with non-zero VRAM hints.
+func requiresGpuScheduling(process *Process) bool {
+	fitPolicy := strings.ToLower(process.FitPolicy())
+
+	// evict_to_fit always requires GPU scheduling
+	if fitPolicy == "evict_to_fit" {
+		return true
+	}
+
+	// cpu_moe with non-zero VRAM hint enables hybrid GPU+CPU execution
+	if fitPolicy == "cpu_moe" && process.MeasuredVramMB() > 0 {
+		return true
+	}
+
+	return false
 }
