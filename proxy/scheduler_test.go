@@ -23,6 +23,38 @@ func (f *fakeGPUAllocator) GetGPUs() ([]GPUInfo, error) {
 	return gpus, nil
 }
 
+type scenarioGPUAllocator struct {
+	gpus     []GPUInfo
+	provider func() []*Process
+	calls    int
+	err      error
+}
+
+func (s *scenarioGPUAllocator) GetGPUs() ([]GPUInfo, error) {
+	s.calls++
+	if s.err != nil {
+		return nil, s.err
+	}
+
+	gpus := make([]GPUInfo, len(s.gpus))
+	copy(gpus, s.gpus)
+
+	for i := range gpus {
+		used := uint64(0)
+		for _, process := range s.provider() {
+			if process.CurrentState() == StateReady && process.AssignedGPU() == gpus[i].Index {
+				used += process.MeasuredVramMB()
+			}
+		}
+		if used >= gpus[i].TotalMB {
+			gpus[i].FreeMB = 0
+			continue
+		}
+		gpus[i].FreeMB = gpus[i].TotalMB - used
+	}
+
+	return gpus, nil
+}
 func newTestProcess(t *testing.T, id, fitPolicy string, vramMB, cpuMB uint64, tracker *MemoryTracker) *Process {
 	t.Helper()
 	config := getTestSimpleResponderConfig(id)
@@ -228,4 +260,67 @@ func TestSchedulerEnsureHostRamCapacity(t *testing.T) {
 	unknown := newTestProcess(t, "unknown", "default", 0, 0, tracker)
 	err = scheduler.ensureHostRamCapacity(unknown)
 	require.NoError(t, err)
+}
+
+func TestSchedulerScheduleProcess_ScenarioSmallToLargeTwiceTracksExpectedResidentSet(t *testing.T) {
+	tracker := NewMemoryTracker()
+
+	type modelShape struct {
+		id     string
+		vramMB uint64
+		cpuMB  uint64
+	}
+
+	// Scenario progression expected by the dual-3090 capacity tuning discussion:
+	// first three models fit concurrently, then residency slides as 3&4, 4&5, 5&6.
+	shapes := []modelShape{
+		{id: "glm-flash-q4", vramMB: 1000, cpuMB: 0},
+		{id: "glm-flash-q8", vramMB: 5000, cpuMB: 0},
+		{id: "qwen-30b-gpu1", vramMB: 9000, cpuMB: 0},
+		{id: "qwen-next", vramMB: 11000, cpuMB: 120},
+		{id: "glm-flash-q8-dual", vramMB: 11500, cpuMB: 245760},
+		{id: "qwen-next-dual", vramMB: 12000, cpuMB: 0},
+	}
+
+	models := make([]*Process, 0, len(shapes))
+	for _, shape := range shapes {
+		models = append(models, newTestProcess(t, shape.id, "evict_to_fit", shape.vramMB, shape.cpuMB, tracker))
+	}
+
+	allocator := &scenarioGPUAllocator{
+		gpus: []GPUInfo{{Index: 0, TotalMB: 24576}},
+		provider: func() []*Process {
+			return models
+		},
+	}
+
+	scheduler := NewScheduler(allocator, testLogger, func() []*Process {
+		return models
+	}, SchedulerOptions{HostRamCapMB: 245760})
+
+	expectedResidentByStep := [][]string{
+		{"glm-flash-q4"},
+		{"glm-flash-q4", "glm-flash-q8"},
+		{"glm-flash-q4", "glm-flash-q8", "qwen-30b-gpu1"},
+		{"qwen-30b-gpu1", "qwen-next"},
+		{"qwen-next", "glm-flash-q8-dual"},
+		{"glm-flash-q8-dual", "qwen-next-dual"},
+	}
+
+	for pass := 0; pass < 2; pass++ {
+		for idx, model := range models {
+			err := scheduler.ScheduleProcess(model)
+			require.NoErrorf(t, err, "pass=%d model=%s", pass+1, model.ID)
+			readyOnGPU(model, model.AssignedGPU())
+
+			var resident []string
+			for _, process := range models {
+				if process.CurrentState() == StateReady && process.AssignedGPU() == 0 {
+					resident = append(resident, process.ID)
+				}
+			}
+
+			require.Equalf(t, expectedResidentByStep[idx], resident, "pass=%d step=%d", pass+1, idx+1)
+		}
+	}
 }
