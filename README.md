@@ -41,7 +41,7 @@ Built in Go for performance and simplicity, llama-swap has zero dependencies and
   - `/health` - just returns "OK"
 - ✅ API Key support - define keys to restrict access to API endpoints
 - ✅ Customizable
-  - Run multiple models at once with `Groups` ([#107](https://github.com/mostlygeek/llama-swap/issues/107))
+  - Run multiple models at once with per-model process lanes ([#107](https://github.com/mostlygeek/llama-swap/issues/107))
   - Automatic unloading of models after timeout by setting a `ttl`
   - Reliable Docker and Podman support using `cmd` and `cmdStop` together
   - Preload models on startup with `hooks` ([#235](https://github.com/mostlygeek/llama-swap/pull/235))
@@ -164,7 +164,7 @@ That's all you need to get started:
 Almost all configuration settings are optional and can be added one step at a time:
 
 - Advanced features
-  - `groups` to run multiple models at once
+  - Fit policies (`evict_to_fit`, `spill`, `cpu_moe`) for automatic VRAM management
   - `hooks` to run things on startup
   - `macros` reusable snippets
 - Model customization
@@ -180,9 +180,9 @@ See the [configuration documentation](docs/configuration.md) for all options.
 
 ## How does llama-swap work?
 
-When a request is made to an OpenAI compatible endpoint, llama-swap will extract the `model` value and load the appropriate server configuration to serve it. If the wrong upstream server is running, it will be replaced with the correct one. This is where the "swap" part comes in. The upstream server is automatically swapped to handle the request correctly.
+When a request is made to an OpenAI compatible endpoint, llama-swap will extract the `model` value and load the appropriate server configuration to serve it. Each model runs in its own isolated process lane, and the scheduler automatically manages VRAM and host RAM based on configured fit policies.
 
-In the most basic configuration llama-swap handles one model at a time. For more advanced use cases, the `groups` feature allows multiple models to be loaded at the same time. You have complete control over how your system resources are used.
+llama-swap can run multiple models simultaneously. The scheduler handles eviction and memory allocation automatically, ensuring models fit within your system's resources. Use fit policies to control how models are loaded and whether idle models should be evicted to make room for new requests.
 
 ## Reverse Proxy Configuration (nginx)
 

@@ -313,16 +313,19 @@ models:
     #   is different from the model's ID
     useModelName: "qwen:qwq"
 
-    # fitPolicy: controls --fit behavior for scheduling
-    # - optional, default: ""
-    # - spill: add --fit to allow RAM spill and expose all GPUs via CUDA_VISIBLE_DEVICES
-    # - evict_to_fit: evict other models until enough VRAM is free on one GPU
-    # - cpu_moe: add --fit and --n-cpu-moe for MoE models
-    # - note: evict_to_fit can be used with --fit in cmd when desired
+    # fitPolicy: controls scheduling and --fit behavior
+    # - optional, default: "evict_to_fit"
+    # - evict_to_fit: scheduler picks best GPU and evicts idle processes to make room
+    # - spill: adds --fit to allow RAM spill and exposes all GPUs via CUDA_VISIBLE_DEVICES
+    # - cpu_moe: adds --fit and --n-cpu-moe for MoE models with CPU offload
+    # - see "Fit Policies and Scheduling" section below for detailed explanation
     fitPolicy: spill
 
-    # cpuMoe: number of MoE experts to offload to CPU when fitPolicy is cpu_moe
+    # cpuMoe: number of MoE expert layers to offload to CPU when fitPolicy is cpu_moe
     # - optional, default: 0
+    # - only applies when fitPolicy is set to "cpu_moe"
+    # - higher values reduce VRAM usage but may impact performance
+    # - example: cpuMoe: 32 for models with many expert layers
     cpuMoe: 0
 
     # initialVramMB: initial VRAM usage hint in MB
@@ -412,68 +415,67 @@ models:
     # - processes have 5 seconds to shutdown until forceful termination is attempted
     cmdStop: docker stop ${MODEL_ID}
 
-# groups: a dictionary of group settings
-# - optional, default: empty dictionary
-# - provides advanced controls over model swapping behaviour
-# - using groups some models can be kept loaded indefinitely, while others are swapped out
-# - model IDs must be defined in the Models section
-# - a model can only be a member of one group
-# - group behaviour is controlled via the `swap`, `exclusive` and `persistent` fields
-# - see issue #109 for details
+# Fit Policies and Scheduling
 #
-# NOTE: the example below uses model names that are not defined above for demonstration purposes
-groups:
-  # group1 works the same as the default behaviour of llama-swap where only one model is allowed
-  # to run a time across the whole llama-swap instance
-  "group1":
-    # swap: controls the model swapping behaviour in within the group
-    # - optional, default: true
-    # - true : only one model is allowed to run at a time
-    # - false: all models can run together, no swapping
-    swap: true
-
-    # exclusive: controls how the group affects other groups
-    # - optional, default: true
-    # - true: causes all other groups to unload when this group runs a model
-    # - false: does not affect other groups
-    exclusive: true
-
-    # members references the models defined above
-    # required
-    members:
-      - "llama"
-      - "qwen-unlisted"
-
-  # Example:
-  # - in group2 all models can run at the same time
-  # - when a different group is loaded it causes all running models in this group to unload
-  "group2":
-    swap: false
-
-    # exclusive: false does not unload other groups when a model in group2 is requested
-    # - the models in group2 will be loaded but will not unload any other groups
-    exclusive: false
-    members:
-      - "docker-llama"
-      - "modelA"
-      - "modelB"
-
-  # Example:
-  # - a persistent group, prevents other groups from unloading it
-  "forever":
-    # persistent: prevents over groups from unloading the models in this group
-    # - optional, default: false
-    # - does not affect individual model behaviour
-    persistent: true
-
-    # set swap/exclusive to false to prevent swapping inside the group
-    # and the unloading of other groups
-    swap: false
-    exclusive: false
-    members:
-      - "forever-modelA"
-      - "forever-modelB"
-      - "forever-modelc"
+# llama-swap uses per-model process lanes with automatic VRAM and host RAM management.
+# Each model runs in its own isolated process, and the scheduler controls how models
+# are loaded and evicted based on configured fit policies and resource constraints.
+#
+# Fit Policies (set per-model via fitPolicy field):
+#
+# 1. evict_to_fit (default):
+#    - Scheduler picks the best GPU with enough free VRAM
+#    - If no GPU has enough free space, evicts idle processes until space is available
+#    - Models run on a single GPU for optimal performance
+#    - Use this for most models
+#
+# 2. spill:
+#    - Adds --fit flag to allow llama.cpp to spill across RAM and multiple GPUs
+#    - Exposes all GPUs via CUDA_VISIBLE_DEVICES
+#    - Useful for models that don't fit on a single GPU
+#    - May have slower performance due to cross-GPU communication
+#
+# 3. cpu_moe:
+#    - For Mixture-of-Experts (MoE) models
+#    - Adds --fit and --n-cpu-moe <count> flags automatically
+#    - Offloads specified number of expert layers to CPU
+#    - Reduces VRAM usage at the cost of some performance
+#    - Set cpuMoe field to specify how many layers to offload
+#
+# Resource Caps (set at top level):
+#
+# - gpuVramCapMB: Total VRAM cap across all GPUs (in MB)
+# - gpuVramCapsMB: Per-GPU VRAM caps as list [GPU0_CAP, GPU1_CAP, ...]
+# - hostRamCapMB: Total host RAM cap for non-spill models (in MB)
+#
+# Example Model Configurations:
+#
+# models:
+#   "small-model":
+#     cmd: "llama-server -m model.gguf"
+#     # Uses default evict_to_fit policy
+#     initialVramMB: 8000
+#     initialCpuMB: 2000
+#
+#   "large-model-spill":
+#     cmd: "llama-server -m large.gguf"
+#     fitPolicy: spill  # Will spill across GPUs/RAM
+#     initialVramMB: 40000
+#     initialCpuMB: 20000
+#
+#   "moe-model":
+#     cmd: "llama-server -m moe.gguf"
+#     fitPolicy: cpu_moe
+#     cpuMoe: 32  # Offload 32 expert layers to CPU
+#     initialVramMB: 22000
+#     initialCpuMB: 120000
+#
+# Migration from Groups:
+#
+# The old group-based architecture with swap/exclusive/persistent semantics has been
+# replaced with per-model process lanes and automatic scheduling. If you have existing
+# group configurations, you can remove them - each model now runs independently with
+# eviction handled automatically by the scheduler based on fit policies and resource caps.
 
 # hooks: a dictionary of event triggers and actions
 # - optional, default: empty dictionary
