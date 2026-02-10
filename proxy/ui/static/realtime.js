@@ -157,9 +157,12 @@
             console.warn('[realtime] Unknown action:', action);
         }
 
-        // Auto-scroll if enabled
+        // Auto-scroll if enabled and user is at bottom (sticky scroll)
         if (el.hasAttribute('data-ws-autoscroll')) {
-          targetEl.scrollTop = targetEl.scrollHeight;
+          const isAtBottom = targetEl.scrollHeight - targetEl.scrollTop - targetEl.clientHeight < 50;
+          if (isAtBottom) {
+            targetEl.scrollTop = targetEl.scrollHeight;
+          }
         }
       });
     },

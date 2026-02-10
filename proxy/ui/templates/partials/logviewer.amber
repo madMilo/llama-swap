@@ -1,42 +1,37 @@
 div#logviewer-logs[data-htmz-get="/ui/partials/logviewer?view=#{$.LogViewerMode}"][data-htmz-target="#logviewer-logs"][data-htmz-poll="5000"]
   if LogViewerMode == "proxy"
-    div.log-panel
+    div.log-panel[data-ws-channel="logs.proxy"][data-ws-target=".pre-block"][data-ws-autoscroll="true"]
       h3 Proxy Logs
       if ProxyLogs != ""
         pre.pre-block #{$.ProxyLogs}
       else
-        div.topcoat-card.empty-state
-          p.topcoat-muted No proxy logs captured yet.
+        pre.pre-block
   else if LogViewerMode == "upstream"
-    div.log-panel
+    div.log-panel[data-ws-channel="logs.upstream"][data-ws-target=".pre-block"][data-ws-autoscroll="true"]
       h3 Upstream Logs
       if UpstreamLogs != ""
         pre.pre-block #{$.UpstreamLogs}
       else
-        div.topcoat-card.empty-state
-          p.topcoat-muted No upstream logs captured yet.
+        pre.pre-block
   else if UpstreamLogs == ""
-    div.log-panel
+    div.log-panel[data-ws-channel="logs.proxy"][data-ws-target=".pre-block"][data-ws-autoscroll="true"]
       h3 Proxy Logs
       if ProxyLogs != ""
         pre.pre-block #{$.ProxyLogs}
       else
-        div.topcoat-card.empty-state
-          p.topcoat-muted No proxy logs captured yet.
+        pre.pre-block
   else
     div.resizable-container[data-resize-key="logviewer-panels"]
-      div.panel-left.log-panel
+      div.panel-left.log-panel[data-ws-channel="logs.proxy"][data-ws-target=".pre-block"][data-ws-autoscroll="true"]
         h3 Proxy Logs
         if ProxyLogs != ""
           pre.pre-block #{$.ProxyLogs}
         else
-          div.topcoat-card.empty-state
-            p.topcoat-muted No proxy logs captured yet.
+          pre.pre-block
       div.resize-handle
-      div.panel-right.log-panel
+      div.panel-right.log-panel[data-ws-channel="logs.upstream"][data-ws-target=".pre-block"][data-ws-autoscroll="true"]
         h3 Upstream Logs
         if UpstreamLogs != ""
           pre.pre-block #{$.UpstreamLogs}
         else
-          div.topcoat-card.empty-state
-            p.topcoat-muted No upstream logs captured yet.
+          pre.pre-block

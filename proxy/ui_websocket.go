@@ -39,11 +39,13 @@ type WSHub struct {
 
 // WSClient represents a WebSocket client connection
 type WSClient struct {
-	hub          *WSHub
-	conn         *websocket.Conn
-	send         chan WSMessage
+	hub           *WSHub
+	conn          *websocket.Conn
+	send          chan WSMessage
 	subscriptions map[string]bool
-	mu           sync.RWMutex
+	logCancels    map[string]func() // Cancel functions for log subscriptions
+	mu            sync.RWMutex
+	pm            *ProxyManager
 }
 
 // NewWSHub creates a new WebSocket hub
@@ -119,6 +121,8 @@ func (pm *ProxyManager) HandleWebSocket(c *gin.Context) {
 		conn:          conn,
 		send:          make(chan WSMessage, 256),
 		subscriptions: make(map[string]bool),
+		logCancels:    make(map[string]func()),
+		pm:            pm,
 	}
 
 	client.hub.register <- client
@@ -131,6 +135,13 @@ func (pm *ProxyManager) HandleWebSocket(c *gin.Context) {
 // readPump reads messages from the WebSocket connection
 func (c *WSClient) readPump() {
 	defer func() {
+		// Cancel all log subscriptions
+		c.mu.Lock()
+		for _, cancel := range c.logCancels {
+			cancel()
+		}
+		c.mu.Unlock()
+
 		c.hub.unregister <- c
 		c.conn.Close()
 	}()
@@ -164,8 +175,10 @@ func (c *WSClient) readPump() {
 		c.mu.Lock()
 		if sub.Action == "subscribe" {
 			c.subscriptions[sub.Channel] = true
+			c.handleChannelSubscribe(sub.Channel)
 		} else if sub.Action == "unsubscribe" {
 			delete(c.subscriptions, sub.Channel)
+			c.handleChannelUnsubscribe(sub.Channel)
 		}
 		c.mu.Unlock()
 	}
@@ -200,5 +213,47 @@ func (c *WSClient) writePump() {
 				return
 			}
 		}
+	}
+}
+
+// handleChannelSubscribe handles subscription to special channels
+func (c *WSClient) handleChannelSubscribe(channel string) {
+	switch channel {
+	case "logs.proxy":
+		if _, exists := c.logCancels[channel]; !exists {
+			cancel := c.pm.proxyLogger.OnLogData(func(data []byte) {
+				c.sendLogLine(channel, ".pre-block", string(data))
+			})
+			c.logCancels[channel] = cancel
+		}
+	case "logs.upstream":
+		if _, exists := c.logCancels[channel]; !exists {
+			cancel := c.pm.upstreamLogger.OnLogData(func(data []byte) {
+				c.sendLogLine(channel, ".pre-block", string(data))
+			})
+			c.logCancels[channel] = cancel
+		}
+	}
+}
+
+// handleChannelUnsubscribe handles unsubscription from special channels
+func (c *WSClient) handleChannelUnsubscribe(channel string) {
+	if cancel, exists := c.logCancels[channel]; exists {
+		cancel()
+		delete(c.logCancels, channel)
+	}
+}
+
+// sendLogLine sends a log line to the client
+func (c *WSClient) sendLogLine(channel, target, content string) {
+	select {
+	case c.send <- WSMessage{
+		Channel: channel,
+		Target:  target,
+		Action:  "append",
+		Content: content,
+	}:
+	default:
+		// Buffer full, drop message
 	}
 }
