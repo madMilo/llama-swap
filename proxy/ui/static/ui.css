@@ -293,3 +293,50 @@ main {
 .capture-content {
   margin-top: 0.5rem;
 }
+
+/* Chat playground */
+.chat-history {
+  margin-top: 1.5rem;
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid var(--topcoat-border);
+  border-radius: 6px;
+  padding: 1rem;
+  background: #f9fafb;
+}
+
+.chat-message {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  background: white;
+}
+
+.chat-message.user {
+  border-left: 3px solid #3b82f6;
+}
+
+.chat-message.assistant {
+  border-left: 3px solid #059669;
+}
+
+.chat-message .role {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.chat-message .content {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.chat-message .content code {
+  background: #e5e7eb;
+  padding: 0.125rem 0.25rem;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.875rem;
+}

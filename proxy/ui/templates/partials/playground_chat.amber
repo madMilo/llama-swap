@@ -24,5 +24,8 @@ div.topcoat-card.playground-card[data-testid="playground-chat"]
     input#playground-chat-images.playground-input[type="file"][accept=".jpg,.jpeg,.png,.gif,.webp"][multiple]
     span.playground-helper Up to 5 images per message, 20MB each.
   div.playground-inline
-    a.topcoat-button[href=PlaygroundChatURL][data-htmz-get=PlaygroundChatPartialURL][data-htmz-target="#playground-content"] Refresh chat tab
-    span.playground-helper Include message content as text or image_url parts in the JSON body.
+    button#send-chat.topcoat-button.topcoat-button--cta[onclick="sendChatMessage()"] Send Message
+    button.topcoat-button[onclick="clearChatHistory()"] Clear History
+    button.topcoat-button[onclick="cancelChatStream()"][style="display: none;"] Cancel
+  div#chat-history.chat-history[data-ws-channel="chat.default"][data-ws-target=".messages"][data-ws-autoscroll="true"]
+    div.messages
