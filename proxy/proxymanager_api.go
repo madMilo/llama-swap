@@ -32,6 +32,7 @@ func addApiHandlers(pm *ProxyManager) {
 	// Protected with API key authentication
 	apiGroup := pm.ginEngine.Group("/api", pm.apiKeyAuth())
 	{
+		apiGroup.GET("/models", pm.apiGetModels)
 		apiGroup.POST("/models/unload", pm.apiUnloadAllModels)
 		apiGroup.POST("/models/unload/*model", pm.apiUnloadSingleModelHandler)
 		apiGroup.GET("/events", pm.apiSendEvents)
@@ -44,6 +45,10 @@ func addApiHandlers(pm *ProxyManager) {
 func (pm *ProxyManager) apiUnloadAllModels(c *gin.Context) {
 	pm.StopProcesses(StopImmediately)
 	c.JSON(http.StatusOK, gin.H{"msg": "ok"})
+}
+
+func (pm *ProxyManager) apiGetModels(c *gin.Context) {
+	c.JSON(http.StatusOK, pm.getModelStatus())
 }
 
 func (pm *ProxyManager) getModelStatus() []Model {
