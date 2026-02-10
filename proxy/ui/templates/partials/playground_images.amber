@@ -1,6 +1,28 @@
 div.topcoat-card.playground-card[data-testid="playground-images"]
   div
     h2 Image generation
+    p.topcoat-muted Endpoint: POST /v1/images/generations.
+  div.playground-grid
+    div.playground-field
+      label[for="playground-images-model"] Model
+      select#playground-images-model.playground-select[name="model"]
+        option[value=""][disabled="disabled"][selected="selected"] Select a model...
+        each $model in Models
+          option[value=$model.ID] #{$model.ID}
+    div.playground-field
+      label[for="playground-images-size"] Size
+      select#playground-images-size.playground-select[name="size"]
+        option[value="1024x1024"] 1024x1024
+        option[value="512x512"] 512x512
+        option[value="256x256"] 256x256
+  div.playground-field
+    label[for="playground-images-prompt"] Prompt
+    textarea#playground-images-prompt.playground-textarea[name="prompt"][rows="4"][placeholder="A cute llama in a meadow..."] #{PlaygroundImageText}
+  div.playground-inline
+    button#generate-image.topcoat-button.topcoat-button--cta[onclick="generateImage()"] Generate
+  div#image-result
+  div
+    h2 Image generation
     p.topcoat-muted Endpoint: POST /v1/images/generations (n=1).
   div.playground-grid
     div.playground-field

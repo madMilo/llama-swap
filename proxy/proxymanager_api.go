@@ -41,6 +41,14 @@ func addApiHandlers(pm *ProxyManager) {
 		apiGroup.GET("/version", pm.apiGetVersion)
 		apiGroup.GET("/captures/:id", pm.apiGetCapture)
 		apiGroup.GET("/ws", pm.HandleWebSocket)
+
+	// Playground endpoints
+	apiGroup.POST("/playground/chat", pm.apiPlaygroundChat)
+	apiGroup.POST("/playground/chat/clear", pm.apiPlaygroundClearChat)
+	apiGroup.GET("/playground/chat/history", pm.apiPlaygroundGetHistory)
+	apiGroup.POST("/playground/images", pm.apiPlaygroundGenerateImage)
+	apiGroup.POST("/playground/speech", pm.apiPlaygroundGenerateSpeech)
+	apiGroup.POST("/playground/transcribe", pm.apiPlaygroundTranscribeAudio)
 	}
 
 }

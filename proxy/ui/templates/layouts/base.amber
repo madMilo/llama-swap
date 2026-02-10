@@ -32,3 +32,4 @@ html
     script[src="/ui/static/htmz.js"]
     script[src="/ui/static/realtime.js"]
     script[src="/ui/static/resizable.js"]
+    script[src="/ui/static/playground.js"]

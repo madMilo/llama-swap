@@ -48,6 +48,9 @@ type ProxyManager struct {
 	// WebSocket hub for real-time updates
 	wsHub *WSHub
 
+	// Playground session manager
+	playgroundSessions *PlaygroundSessionManager
+
 	// shutdown signaling
 	shutdownCtx    context.Context
 	shutdownCancel context.CancelFunc
@@ -172,6 +175,8 @@ func NewWithAllocator(proxyConfig config.Config, allocator GPUAllocator) *ProxyM
 		memoryTracker: NewMemoryTracker(),
 
 		wsHub: NewWSHub(),
+
+		playgroundSessions: NewPlaygroundSessionManager(),
 
 		shutdownCtx:    shutdownCtx,
 		shutdownCancel: shutdownCancel,

@@ -28,5 +28,5 @@ div.topcoat-card.playground-card[data-testid="playground-speech"]
     label[for="playground-speech-input"] Input text
     textarea#playground-speech-input.playground-textarea[name="input"][rows="4"][placeholder="Enter text to synthesize..."] #{PlaygroundSpeechText}
   div.playground-inline
-    a.topcoat-button[href=PlaygroundSpeechURL][data-htmz-get=PlaygroundSpeechPartialURL][data-htmz-target="#playground-content"] Refresh speech tab
-    span.playground-helper Available voices can be queried from GET /v1/audio/voices?model=...
+    button#generate-speech.topcoat-button.topcoat-button--cta[onclick="generateSpeech()"] Generate
+  div#speech-result
