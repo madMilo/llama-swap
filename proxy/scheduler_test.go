@@ -364,3 +364,11 @@ func TestSchedulerScheduleProcess_PrefersGPUWithoutEviction(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 0, candidate.AssignedGPU())
 }
+
+func TestSchedulerShouldWarnMissingHostRAM_OncePerProcess(t *testing.T) {
+	scheduler := NewScheduler(&fakeGPUAllocator{}, testLogger, func() []*Process { return nil }, SchedulerOptions{})
+
+	require.True(t, scheduler.shouldWarnMissingHostRAM("qwen-30b"))
+	require.False(t, scheduler.shouldWarnMissingHostRAM("qwen-30b"))
+	require.True(t, scheduler.shouldWarnMissingHostRAM("glm-flash-q4"))
+}

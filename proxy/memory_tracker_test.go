@@ -37,6 +37,13 @@ func TestParseMemoryFromLog(t *testing.T) {
 			expected:  MemoryFootprint{VramMB: 8000, CpuMB: 16000},
 			expectHit: true,
 		},
+
+		{
+			name:      "plain text vram-only does not infer cpu from vram token",
+			line:      "VRAM used: 1616 MiB",
+			expected:  MemoryFootprint{VramMB: 1616, CpuMB: 0},
+			expectHit: true,
+		},
 		{
 			name:      "empty line",
 			line:      "",

@@ -27,10 +27,13 @@ type Scheduler struct {
 	logger    *LogMonitor
 	provider  func() []*Process
 	mu        sync.Mutex
+	warnMu    sync.Mutex
 
 	gpuVramCapMB  uint64
 	gpuVramCapsMB []uint64
 	hostRamCapMB  uint64
+
+	missingHostRAMWarned map[string]struct{}
 }
 
 type SchedulerOptions struct {
@@ -47,6 +50,7 @@ func NewScheduler(allocator GPUAllocator, logger *LogMonitor, provider func() []
 		gpuVramCapMB:  opts.GpuVramCapMB,
 		gpuVramCapsMB: append([]uint64(nil), opts.GpuVramCapsMB...),
 		hostRamCapMB:  opts.HostRamCapMB,
+		missingHostRAMWarned: make(map[string]struct{}),
 	}
 }
 
@@ -313,7 +317,9 @@ func (s *Scheduler) ensureHostRamCapacity(process *Process) error {
 
 	requiredMB := process.MeasuredCpuMB()
 	if requiredMB == 0 {
-		s.logger.Warnf("<%s> missing host RAM footprint; skipping host RAM cap check", process.ID)
+		if s.shouldWarnMissingHostRAM(process.ID) {
+			s.logger.Warnf("<%s> missing host RAM footprint; skipping host RAM cap check", process.ID)
+		}
 		s.logger.Infof("<%s> host RAM scheduling decision: allow (missing host RAM footprint)", process.ID)
 		return nil
 	}
@@ -332,6 +338,16 @@ func (s *Scheduler) ensureHostRamCapacity(process *Process) error {
 	}
 	s.logger.Infof("<%s> host RAM scheduling decision: allow used_mb=%d required_mb=%d cap_mb=%d", process.ID, total, requiredMB, s.hostRamCapMB)
 	return nil
+}
+
+func (s *Scheduler) shouldWarnMissingHostRAM(processID string) bool {
+	s.warnMu.Lock()
+	defer s.warnMu.Unlock()
+	if _, ok := s.missingHostRAMWarned[processID]; ok {
+		return false
+	}
+	s.missingHostRAMWarned[processID] = struct{}{}
+	return true
 }
 
 func shouldAccountHostRam(process *Process) bool {
