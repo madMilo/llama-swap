@@ -7,32 +7,27 @@ block content
   div.section-header
     h1 Playground
     div.section-actions
-      if PlaygroundTab == "images"
-        a.topcoat-button[href="/ui/playground?tab=images"] Refresh tab
-      else if PlaygroundTab == "speech"
-        a.topcoat-button[href="/ui/playground?tab=speech"] Refresh tab
-      else if PlaygroundTab == "audio"
-        a.topcoat-button[href="/ui/playground?tab=audio"] Refresh tab
-      else
-        a.topcoat-button[href="/ui/playground?tab=chat"] Refresh tab
+      a.topcoat-button[href=PlaygroundPageURL] Refresh tab
   p.page-description Explore chat, image, speech, and transcription requests using the same defaults as the Svelte playground.
+  if PlaygroundMock
+    div.topcoat-notification.topcoat-notification--info[data-testid="playground-mock-note"] Mock data mode is enabled for UI testing and screenshots.
   nav.playground-tabs
     if PlaygroundTab == "chat"
-      a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=chat"] Chat
+      a.topcoat-button.topcoat-button--cta[href=PlaygroundChatURL][data-htmz-get=PlaygroundChatPartialURL][data-htmz-target="#playground-content"] Chat
     else
-      a.topcoat-button[href="/ui/playground?tab=chat"] Chat
+      a.topcoat-button[href=PlaygroundChatURL][data-htmz-get=PlaygroundChatPartialURL][data-htmz-target="#playground-content"] Chat
     if PlaygroundTab == "images"
-      a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=images"] Images
+      a.topcoat-button.topcoat-button--cta[href=PlaygroundImagesURL][data-htmz-get=PlaygroundImagesPartialURL][data-htmz-target="#playground-content"] Images
     else
-      a.topcoat-button[href="/ui/playground?tab=images"] Images
+      a.topcoat-button[href=PlaygroundImagesURL][data-htmz-get=PlaygroundImagesPartialURL][data-htmz-target="#playground-content"] Images
     if PlaygroundTab == "speech"
-      a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=speech"] Speech
+      a.topcoat-button.topcoat-button--cta[href=PlaygroundSpeechURL][data-htmz-get=PlaygroundSpeechPartialURL][data-htmz-target="#playground-content"] Speech
     else
-      a.topcoat-button[href="/ui/playground?tab=speech"] Speech
+      a.topcoat-button[href=PlaygroundSpeechURL][data-htmz-get=PlaygroundSpeechPartialURL][data-htmz-target="#playground-content"] Speech
     if PlaygroundTab == "audio"
-      a.topcoat-button.topcoat-button--cta[href="/ui/playground?tab=audio"] Transcription
+      a.topcoat-button.topcoat-button--cta[href=PlaygroundAudioURL][data-htmz-get=PlaygroundAudioPartialURL][data-htmz-target="#playground-content"] Transcription
     else
-      a.topcoat-button[href="/ui/playground?tab=audio"] Transcription
+      a.topcoat-button[href=PlaygroundAudioURL][data-htmz-get=PlaygroundAudioPartialURL][data-htmz-target="#playground-content"] Transcription
   div#playground-content
     if PlaygroundTab == "images"
       import ../partials/playground_images

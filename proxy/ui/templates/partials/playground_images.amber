@@ -1,4 +1,4 @@
-div.topcoat-card.playground-card
+div.topcoat-card.playground-card[data-testid="playground-images"]
   div
     h2 Image generation
     p.topcoat-muted Endpoint: POST /v1/images/generations (n=1).
@@ -25,7 +25,7 @@ div.topcoat-card.playground-card
           option[value="1024x1792"] 1024x1792 (SDXL)
   div.playground-field
     label[for="playground-image-prompt"] Prompt
-    textarea#playground-image-prompt.playground-textarea[name="prompt"][rows="4"][placeholder="Describe the image you want to generate..."]
+    textarea#playground-image-prompt.playground-textarea[name="prompt"][rows="4"][placeholder="Describe the image you want to generate..."] #{PlaygroundImageText}
   div.playground-inline
-    a.topcoat-button[href="/ui/playground?tab=images"][data-htmz-get="/ui/partials/playground/images"][data-htmz-target="#playground-content"] Refresh images tab
+    a.topcoat-button[href=PlaygroundImagesURL][data-htmz-get=PlaygroundImagesPartialURL][data-htmz-target="#playground-content"] Refresh images tab
     span.playground-helper The response returns base64-encoded data or a URL.

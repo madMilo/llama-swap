@@ -1,4 +1,4 @@
-div.topcoat-card.playground-card
+div.topcoat-card.playground-card[data-testid="playground-chat"]
   div
     h2 Chat completions
     p.topcoat-muted Endpoint: POST /v1/chat/completions (streaming supported).
@@ -15,14 +15,14 @@ div.topcoat-card.playground-card
       span.playground-helper Default: 0.70 (range 0-2).
   div.playground-field
     label[for="playground-chat-system"] System prompt
-    textarea#playground-chat-system.playground-textarea[name="system"][rows="3"][placeholder="You are a helpful assistant..."]
+    textarea#playground-chat-system.playground-textarea[name="system"][rows="3"][placeholder="You are a helpful assistant..."] #{PlaygroundSystemText}
   div.playground-field
     label[for="playground-chat-message"] Message
-    textarea#playground-chat-message.playground-textarea[name="message"][rows="4"][placeholder="Type a message..."]
+    textarea#playground-chat-message.playground-textarea[name="message"][rows="4"][placeholder="Type a message..."] #{PlaygroundChatText}
   div.playground-field
     label[for="playground-chat-images"] Image attachments
     input#playground-chat-images.playground-input[type="file"][accept=".jpg,.jpeg,.png,.gif,.webp"][multiple]
     span.playground-helper Up to 5 images per message, 20MB each.
   div.playground-inline
-    a.topcoat-button[href="/ui/playground?tab=chat"][data-htmz-get="/ui/partials/playground/chat"][data-htmz-target="#playground-content"] Refresh chat tab
+    a.topcoat-button[href=PlaygroundChatURL][data-htmz-get=PlaygroundChatPartialURL][data-htmz-target="#playground-content"] Refresh chat tab
     span.playground-helper Include message content as text or image_url parts in the JSON body.
