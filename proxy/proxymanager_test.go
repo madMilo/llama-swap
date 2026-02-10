@@ -19,6 +19,7 @@ import (
 	"github.com/mostlygeek/llama-swap/event"
 	"github.com/mostlygeek/llama-swap/proxy/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )
 
@@ -485,7 +486,13 @@ func TestProxyManager_Unload(t *testing.T) {
 	w := CreateTestResponseRecorder()
 	proxy.ServeHTTP(w, req)
 
-	assert.Equal(t, proxy.processGroups[config.DEFAULT_GROUP_ID].processes["model1"].CurrentState(), StateReady)
+	require.Equal(t, http.StatusOK, w.Code, "request should succeed, got: %s", w.Body.String())
+
+	processGroup := proxy.processGroups["model1"]
+	require.NotNil(t, processGroup, "process group should exist")
+	process := processGroup.processes["model1"]
+	require.NotNil(t, process, "model1 process should exist")
+	assert.Equal(t, StateReady, process.CurrentState())
 	req = httptest.NewRequest("GET", "/unload", nil)
 	w = CreateTestResponseRecorder()
 	proxy.ServeHTTP(w, req)
@@ -493,12 +500,12 @@ func TestProxyManager_Unload(t *testing.T) {
 	assert.Equal(t, w.Body.String(), "OK")
 
 	select {
-	case <-proxy.processGroups[config.DEFAULT_GROUP_ID].processes["model1"].cmdWaitChan:
+	case <-proxy.processGroups["model1"].processes["model1"].cmdWaitChan:
 		// good
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for model1 to stop")
 	}
-	assert.Equal(t, proxy.processGroups[config.DEFAULT_GROUP_ID].processes["model1"].CurrentState(), StateStopped)
+	assert.Equal(t, proxy.processGroups["model1"].processes["model1"].CurrentState(), StateStopped)
 }
 
 func TestProxyManager_UnloadSingleModel(t *testing.T) {
@@ -527,10 +534,16 @@ func TestProxyManager_UnloadSingleModel(t *testing.T) {
 		req := httptest.NewRequest("POST", "/v1/chat/completions", bytes.NewBufferString(reqBody))
 		w := CreateTestResponseRecorder()
 		proxy.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code, "request for %s should succeed, got: %s", modelName, w.Body.String())
 	}
 
-	assert.Equal(t, StateReady, proxy.processGroups[testGroupId].processes["model1"].CurrentState())
-	assert.Equal(t, StateReady, proxy.processGroups[testGroupId].processes["model2"].CurrentState())
+	// Process groups are now keyed by model ID, not group ID
+	require.NotNil(t, proxy.processGroups["model1"], "model1 process group should exist")
+	require.NotNil(t, proxy.processGroups["model2"], "model2 process group should exist")
+	require.NotNil(t, proxy.processGroups["model1"].processes["model1"], "model1 process should exist")
+	require.NotNil(t, proxy.processGroups["model2"].processes["model2"], "model2 process should exist")
+	assert.Equal(t, StateReady, proxy.processGroups["model1"].processes["model1"].CurrentState())
+	assert.Equal(t, StateReady, proxy.processGroups["model2"].processes["model2"].CurrentState())
 
 	req := httptest.NewRequest("POST", "/api/models/unload/model1", nil)
 	w := CreateTestResponseRecorder()
@@ -541,14 +554,14 @@ func TestProxyManager_UnloadSingleModel(t *testing.T) {
 	}
 
 	select {
-	case <-proxy.processGroups[testGroupId].processes["model1"].cmdWaitChan:
+	case <-proxy.processGroups["model1"].processes["model1"].cmdWaitChan:
 		// good
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for model1 to stop")
 	}
 
-	assert.Equal(t, proxy.processGroups[testGroupId].processes["model1"].CurrentState(), StateStopped)
-	assert.Equal(t, proxy.processGroups[testGroupId].processes["model2"].CurrentState(), StateReady)
+	assert.Equal(t, proxy.processGroups["model1"].processes["model1"].CurrentState(), StateStopped)
+	assert.Equal(t, proxy.processGroups["model2"].processes["model2"].CurrentState(), StateReady)
 }
 
 // Test issue #61 `Listing the current list of models and the loaded model.`
@@ -1030,13 +1043,17 @@ models:
 			t.Fatal("timed out waiting for models to preload")
 		}
 	}
-	// make sure they are both loaded
-	_, foundGroup := proxy.processGroups["preloadTestGroup"]
-	if !assert.True(t, foundGroup, "preloadTestGroup should exist") {
+	// make sure they are both loaded (process groups are keyed by model ID)
+	_, foundModel1 := proxy.processGroups["model1"]
+	_, foundModel2 := proxy.processGroups["model2"]
+	if !assert.True(t, foundModel1, "model1 process group should exist") {
 		return
 	}
-	assert.Equal(t, StateReady, proxy.processGroups["preloadTestGroup"].processes["model1"].CurrentState())
-	assert.Equal(t, StateReady, proxy.processGroups["preloadTestGroup"].processes["model2"].CurrentState())
+	if !assert.True(t, foundModel2, "model2 process group should exist") {
+		return
+	}
+	assert.Equal(t, StateReady, proxy.processGroups["model1"].processes["model1"].CurrentState())
+	assert.Equal(t, StateReady, proxy.processGroups["model2"].processes["model2"].CurrentState())
 }
 
 func TestProxyManager_StreamingEndpointsReturnNoBufferingHeader(t *testing.T) {

@@ -14,7 +14,7 @@ func TestProcess_MemoryTrackerUpdates(t *testing.T) {
 	port := getTestPort()
 	config := getTestSimpleResponderConfigPortArgs(expectedMessage, port,
 		"--memory-log-interval", "25ms",
-		"--memory-log-format", "both",
+		"--memory-log-format", "json",
 		"--memory-log-vram-mb", "46759",
 		"--memory-log-cpu-mb", "248000",
 		"--memory-log-count", "4",

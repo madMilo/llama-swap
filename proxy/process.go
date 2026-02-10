@@ -519,6 +519,19 @@ func (p *Process) StopImmediately() {
 
 	p.SetAssignedGPU(-1)
 	p.SetRuntimeEnv(nil)
+
+	// Check if process was fully initialized before attempting to stop
+	p.cmdMutex.RLock()
+	hasUpstream := p.cancelUpstream != nil
+	p.cmdMutex.RUnlock()
+
+	if !hasUpstream {
+		// Process never fully started, force to stopped state
+		p.proxyLogger.Debugf("<%s> Process never fully started, forcing to stopped state", p.ID)
+		p.forceState(StateStopped)
+		return
+	}
+
 	p.stopCommand()
 }
 
@@ -556,6 +569,8 @@ func (p *Process) stopCommand() {
 
 	if cancelUpstream == nil {
 		p.proxyLogger.Errorf("<%s> stopCommand has a nil p.cancelUpstream()", p.ID)
+		// Ensure process is in stopped state since it was never fully started
+		p.forceState(StateStopped)
 		return
 	}
 
