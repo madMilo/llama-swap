@@ -42,6 +42,18 @@ func TestParseMemoryFromLog(t *testing.T) {
 			line:      "",
 			expectHit: false,
 		},
+		{
+			name:      "llama style kv cache line",
+			line:      "llama_kv_cache_unified: layer 61: dev = CUDA0 KV buffer size =  2048.00 MiB, host buffer size =   512.00 MiB",
+			expected:  MemoryFootprint{VramMB: 2048, CpuMB: 512},
+			expectHit: true,
+		},
+		{
+			name:      "llama style model buffer line",
+			line:      "load_tensors:      CUDA0 model buffer size = 23347.06 MiB",
+			expected:  MemoryFootprint{VramMB: 23347, CpuMB: 0},
+			expectHit: true,
+		},
 	}
 
 	for _, test := range tests {
@@ -54,4 +66,19 @@ func TestParseMemoryFromLog(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMemoryTrackerObserveLog_MergesPartialUpdates(t *testing.T) {
+	tracker := NewMemoryTracker()
+	signature := "model|cmd"
+
+	tracker.Set(signature, MemoryFootprint{VramMB: 23347, CpuMB: 245760})
+
+	_, ok := tracker.ObserveLog(signature, "load_tensors:      CUDA0 model buffer size = 22000.00 MiB")
+	assert.True(t, ok)
+
+	footprint, exists := tracker.Get(signature)
+	assert.True(t, exists)
+	assert.Equal(t, uint64(22000), footprint.VramMB)
+	assert.Equal(t, uint64(245760), footprint.CpuMB)
 }

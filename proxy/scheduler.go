@@ -121,6 +121,7 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 		gpuIndex int
 		evict    []*Process
 		freeMB   uint64
+		assigned int
 	}
 
 	running := s.provider()
@@ -135,6 +136,7 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 			gpuIndex: gpu.Index,
 			evict:    evictable,
 			freeMB:   gpu.FreeMB,
+			assigned: len(assigned),
 		})
 	}
 
@@ -144,7 +146,16 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 	}
 
 	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].freeMB > candidates[j].freeMB
+		if len(candidates[i].evict) != len(candidates[j].evict) {
+			return len(candidates[i].evict) < len(candidates[j].evict)
+		}
+		if candidates[i].assigned != candidates[j].assigned {
+			return candidates[i].assigned < candidates[j].assigned
+		}
+		if candidates[i].freeMB != candidates[j].freeMB {
+			return candidates[i].freeMB > candidates[j].freeMB
+		}
+		return candidates[i].gpuIndex < candidates[j].gpuIndex
 	})
 
 	chosen := candidates[0]
