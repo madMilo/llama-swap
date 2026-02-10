@@ -373,9 +373,11 @@ func (pm *ProxyManager) uiRecommendationData() ([]UIRecommendationModel, []strin
 		if processGroup != nil {
 			process := processGroup.processes[modelID]
 			if process != nil {
-				measuredVram = process.MeasuredVramMB()
-				measuredCpu = process.MeasuredCpuMB()
-				assignedGPU = process.AssignedGPU()
+				if footprint, ok := process.RuntimeFootprint(); ok {
+					measuredVram = footprint.VramMB
+					measuredCpu = footprint.CpuMB
+					assignedGPU = process.AssignedGPU()
+				}
 			}
 		}
 

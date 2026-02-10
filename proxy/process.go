@@ -121,10 +121,6 @@ func NewProcess(ID string, healthCheckTimeout int, config config.ModelConfig, pr
 		VramMB: config.InitialVramMB,
 		CpuMB:  config.InitialCpuMB,
 	}
-	if observedFootprint.VramMB > 0 || observedFootprint.CpuMB > 0 {
-		observedFootprint.RecordedAt = time.Now()
-	}
-
 	return &Process{
 		ID:                      ID,
 		config:                  config,
@@ -226,6 +222,24 @@ func (p *Process) MeasuredCpuMB() uint64 {
 		return footprint.CpuMB
 	}
 	return p.observedFootprint.CpuMB
+}
+
+func (p *Process) RuntimeFootprint() (MemoryFootprint, bool) {
+	if p.memoryTracker != nil && p.memorySignature != "" {
+		if footprint, ok := p.memoryTracker.Get(p.memorySignature); ok {
+			if footprint.VramMB > 0 || footprint.CpuMB > 0 {
+				return footprint, true
+			}
+		}
+	}
+
+	if p.observedFootprint.RecordedAt.IsZero() {
+		return MemoryFootprint{}, false
+	}
+	if p.observedFootprint.VramMB == 0 && p.observedFootprint.CpuMB == 0 {
+		return MemoryFootprint{}, false
+	}
+	return p.observedFootprint, true
 }
 
 // LogMonitor returns the log monitor associated with the process.
