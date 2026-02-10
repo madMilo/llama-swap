@@ -59,13 +59,6 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 	}
 
 	requiredMB := process.MeasuredVramMB()
-	if requiredMB == 0 {
-		return ErrUnknownFootprint
-	}
-
-	if requiredMB == 0 {
-		return nil
-	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -77,6 +70,19 @@ func (s *Scheduler) ScheduleProcess(process *Process) error {
 	gpus = s.applyVramCaps(gpus)
 	if len(gpus) == 0 {
 		return fmt.Errorf("no GPUs detected for scheduling")
+	}
+
+	if requiredMB == 0 {
+		s.logger.Warnf("<%s> missing VRAM footprint; selecting GPU with most free memory", process.ID)
+		chosen := gpus[0]
+		for _, gpu := range gpus[1:] {
+			if gpu.FreeMB > chosen.FreeMB {
+				chosen = gpu
+			}
+		}
+		process.SetAssignedGPU(chosen.Index)
+		process.SetRuntimeEnv([]string{fmt.Sprintf("CUDA_VISIBLE_DEVICES=%d", chosen.Index)})
+		return nil
 	}
 
 	type candidate struct {
@@ -262,13 +268,15 @@ func (s *Scheduler) ensureHostRamCapacity(process *Process) error {
 
 	requiredMB := process.MeasuredCpuMB()
 	if requiredMB == 0 {
-		return ErrUnknownFootprint
+		s.logger.Warnf("<%s> missing host RAM footprint; skipping host RAM cap check", process.ID)
+		return nil
 	}
 
 	running := s.provider()
 	total, ok := sumCpuMB(running)
 	if !ok {
-		return ErrUnknownFootprint
+		s.logger.Warnf("unable to fully account host RAM usage for running models; skipping host RAM cap check")
+		return nil
 	}
 
 	if total+requiredMB > s.hostRamCapMB {
