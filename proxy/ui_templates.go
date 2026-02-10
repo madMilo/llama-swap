@@ -31,6 +31,7 @@ func loadUITemplates() (*UITemplates, error) {
 		"partials/playground_images": "ui/templates/partials/playground_images.amber",
 		"partials/playground_speech": "ui/templates/partials/playground_speech.amber",
 		"partials/playground_audio":  "ui/templates/partials/playground_audio.amber",
+		"partials/stats":             "ui/templates/partials/stats.amber",
 	}
 
 	opts := amber.Options{

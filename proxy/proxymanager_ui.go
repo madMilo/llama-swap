@@ -93,6 +93,12 @@ type UIPageData struct {
 	LogViewerMode              string
 	RecommendationModels       []UIRecommendationModel
 	RecommendationNotes        []string
+	StatsAvailable             bool
+	StatsTotal                 int
+	StatsInputTokens           int
+	StatsOutputTokens          int
+	StatsAvgSpeed              string
+	StatsHistogramSVG          string
 }
 
 func (pm *ProxyManager) uiIndexHandler(c *gin.Context) {
@@ -114,6 +120,7 @@ func (pm *ProxyManager) uiRunningPageHandler(c *gin.Context) {
 func (pm *ProxyManager) uiActivityPageHandler(c *gin.Context) {
 	data := pm.uiPageData("/ui/activity")
 	data.ActivityMetrics = pm.uiActivityMetrics()
+	pm.uiPopulateStats(&data)
 	pm.renderUITemplate(c, "pages/activity", data)
 }
 
@@ -154,6 +161,7 @@ func (pm *ProxyManager) uiRunningPartialHandler(c *gin.Context) {
 func (pm *ProxyManager) uiActivityPartialHandler(c *gin.Context) {
 	data := pm.uiPageData("/ui/activity")
 	data.ActivityMetrics = pm.uiActivityMetrics()
+	pm.uiPopulateStats(&data)
 	pm.renderUITemplate(c, "partials/activity", data)
 }
 
@@ -706,6 +714,40 @@ func formatBody(body []byte) (string, string) {
 		return string(body), "Body"
 	}
 	return base64.StdEncoding.EncodeToString(body), "Body (base64)"
+}
+
+func (pm *ProxyManager) uiPopulateStats(data *UIPageData) {
+	metrics := pm.metricsMonitor.getMetrics()
+	if len(metrics) == 0 {
+		data.StatsAvailable = false
+		return
+	}
+
+	data.StatsAvailable = true
+	data.StatsTotal = len(metrics)
+
+	totalInput := 0
+	totalOutput := 0
+	totalSpeed := 0.0
+	count := 0
+
+	for _, m := range metrics {
+		totalInput += m.InputTokens
+		totalOutput += m.OutputTokens
+		if m.TokensPerSecond > 0 {
+			totalSpeed += m.TokensPerSecond
+			count++
+		}
+	}
+
+	data.StatsInputTokens = totalInput
+	data.StatsOutputTokens = totalOutput
+	if count > 0 {
+		data.StatsAvgSpeed = fmt.Sprintf("%.1f", totalSpeed/float64(count))
+	} else {
+		data.StatsAvgSpeed = "N/A"
+	}
+	data.StatsHistogramSVG = "" // TODO: Implement histogram
 }
 
 func (pm *ProxyManager) renderUITemplate(c *gin.Context, name string, data UIPageData) {

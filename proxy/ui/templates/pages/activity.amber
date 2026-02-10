@@ -9,6 +9,8 @@ block content
     div.section-actions
       a.topcoat-button[href="/ui/activity"][data-htmz-get="/ui/partials/activity"][data-htmz-target="#activity-content"] Refresh activity
   p.page-description Recent token usage metrics captured from upstream requests.
+  div#activity-stats
+    import ../partials/stats
   div#activity-content[data-htmz-get="/ui/partials/activity"][data-htmz-target="#activity-content"][data-htmz-poll="5000"]
     import ../partials/activity
   div#activity-capture[data-htmz-persist="true"]

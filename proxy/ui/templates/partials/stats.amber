@@ -1,0 +1,21 @@
+if StatsAvailable
+  div.topcoat-card[style="margin-bottom: 1.5rem;"]
+    h2 Statistics
+    div[style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;"]
+      div[style="padding: 0.75rem; background: #f9fafb; border-radius: 6px;"]
+        div[style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; margin-bottom: 0.25rem;"] Total Requests
+        div[style="font-size: 1.5rem; font-weight: 600;"] #{StatsTotal}
+      div[style="padding: 0.75rem; background: #f9fafb; border-radius: 6px;"]
+        div[style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; margin-bottom: 0.25rem;"] Input Tokens
+        div[style="font-size: 1.5rem; font-weight: 600;"] #{StatsInputTokens}
+      div[style="padding: 0.75rem; background: #f9fafb; border-radius: 6px;"]
+        div[style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; margin-bottom: 0.25rem;"] Output Tokens
+        div[style="font-size: 1.5rem; font-weight: 600;"] #{StatsOutputTokens}
+      div[style="padding: 0.75rem; background: #f9fafb; border-radius: 6px;"]
+        div[style="font-size: 0.75rem; color: #6b7280; text-transform: uppercase; margin-bottom: 0.25rem;"] Avg Speed (t/s)
+        div[style="font-size: 1.5rem; font-weight: 600;"] #{StatsAvgSpeed}
+    if StatsHistogramSVG != ""
+      div[style="margin-top: 1rem;"]
+        h3 Token Generation Speed Distribution
+        div[style="background: white; padding: 1rem; border-radius: 6px; border: 1px solid #e5e7eb;"]
+          | !{StatsHistogramSVG}
