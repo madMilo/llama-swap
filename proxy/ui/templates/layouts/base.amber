@@ -9,6 +9,7 @@ html
     link[rel="icon"][type="image/svg+xml"][href="/ui/static/favicon.svg"]
     link[rel="stylesheet"][href="/ui/static/topcoat.css"]
     link[rel="stylesheet"][href="/ui/static/ui.css"]
+    link[rel="stylesheet"][href="/ui/static/chroma.css"]
   body
     header.topcoat-navigation-bar
       span.topcoat-navigation-bar__title Llama Swap UI
@@ -28,3 +29,5 @@ html
       if VersionInfo.BuildDate != ""
         span · Built #{VersionInfo.BuildDate}
     script[src="/ui/static/htmz.js"]
+    script[src="/ui/static/realtime.js"]
+    script[src="/ui/static/resizable.js"]

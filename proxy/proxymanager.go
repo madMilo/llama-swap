@@ -45,6 +45,9 @@ type ProxyManager struct {
 	scheduler     *Scheduler
 	memoryTracker *MemoryTracker
 
+	// WebSocket hub for real-time updates
+	wsHub *WSHub
+
 	// shutdown signaling
 	shutdownCtx    context.Context
 	shutdownCancel context.CancelFunc
@@ -168,6 +171,8 @@ func NewWithAllocator(proxyConfig config.Config, allocator GPUAllocator) *ProxyM
 		processGroups: make(map[string]*ProcessGroup),
 		memoryTracker: NewMemoryTracker(),
 
+		wsHub: NewWSHub(),
+
 		shutdownCtx:    shutdownCtx,
 		shutdownCancel: shutdownCancel,
 
@@ -177,6 +182,9 @@ func NewWithAllocator(proxyConfig config.Config, allocator GPUAllocator) *ProxyM
 
 		peerProxy: peerProxy,
 	}
+
+	// Start WebSocket hub
+	go pm.wsHub.Run()
 
 	uiTemplates, err := loadUITemplates()
 	if err != nil {
@@ -420,6 +428,18 @@ func (pm *ProxyManager) setupGinEngine() {
 				c.AbortWithStatus(http.StatusNotFound)
 				return
 			}
+
+			// Handle dynamically generated chroma.css for syntax highlighting
+			if filepath == "chroma.css" {
+				css, err := GenerateChromaCSS()
+				if err != nil {
+					c.String(http.StatusInternalServerError, err.Error())
+					return
+				}
+				c.Data(http.StatusOK, "text/css", []byte(css))
+				return
+			}
+
 			ServeCompressedFile(uiStaticFS, c.Writer, c.Request, filepath)
 		})
 	}

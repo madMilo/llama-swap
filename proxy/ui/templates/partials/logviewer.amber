@@ -24,15 +24,16 @@ div#logviewer-logs[data-htmz-get="/ui/partials/logviewer?view=#{$.LogViewerMode}
         div.topcoat-card.empty-state
           p.topcoat-muted No proxy logs captured yet.
   else
-    div.log-panels
-      div.log-panel
+    div.resizable-container[data-resize-key="logviewer-panels"]
+      div.panel-left.log-panel
         h3 Proxy Logs
         if ProxyLogs != ""
           pre.pre-block #{$.ProxyLogs}
         else
           div.topcoat-card.empty-state
             p.topcoat-muted No proxy logs captured yet.
-      div.log-panel
+      div.resize-handle
+      div.panel-right.log-panel
         h3 Upstream Logs
         if UpstreamLogs != ""
           pre.pre-block #{$.UpstreamLogs}

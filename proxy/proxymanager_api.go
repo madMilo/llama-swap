@@ -39,6 +39,7 @@ func addApiHandlers(pm *ProxyManager) {
 		apiGroup.GET("/metrics", pm.apiGetMetrics)
 		apiGroup.GET("/version", pm.apiGetVersion)
 		apiGroup.GET("/captures/:id", pm.apiGetCapture)
+		apiGroup.GET("/ws", pm.HandleWebSocket)
 	}
 }
 

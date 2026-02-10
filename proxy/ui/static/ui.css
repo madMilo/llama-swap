@@ -182,3 +182,50 @@ main {
   color: #b45309;
   font-weight: 600;
 }
+
+/* Resizable panels */
+.resizable-container {
+  display: flex;
+  height: 100%;
+  gap: 0;
+  position: relative;
+}
+
+.resizable-container .panel-left,
+.resizable-container .panel-right {
+  overflow: auto;
+  flex-shrink: 0;
+}
+
+.resizable-container .panel-left {
+  flex-basis: 50%;
+  min-width: 200px;
+}
+
+.resizable-container .panel-right {
+  flex-grow: 1;
+  min-width: 200px;
+}
+
+.resize-handle {
+  width: 8px;
+  background: var(--topcoat-border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.resize-handle:hover,
+.resizable-container.resizing .resize-handle {
+  background: var(--topcoat-primary);
+}
+
+.resizable-container.resizing {
+  user-select: none;
+}
+
+.resizable-container.resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
