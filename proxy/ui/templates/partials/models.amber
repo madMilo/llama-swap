@@ -52,7 +52,9 @@ if len(Models) > 0
               else
                 span.topcoat-muted Stopped
             td
-              if $model.State == "ready"
+              if $model.ID == ""
+                span.topcoat-muted Invalid model ID
+              else if $model.State == "ready"
                 button.topcoat-button[data-htmz-post="/api/models/unload/#{$model.ID}"][data-htmz-target="#models-list"][data-htmz-swap="none"][onclick="this.classList.add('btn-loading'); this.disabled=true; setTimeout(() => window.refreshModels(), 500)"] Unload
               else if $model.State == "stopped"
                 button.topcoat-button.topcoat-button--cta[data-htmz-post="/api/models/load/#{$model.ID}"][data-htmz-target="#models-list"][data-htmz-swap="none"][onclick="this.classList.add('btn-loading'); this.disabled=true; setTimeout(() => window.refreshModels(), 500)"] Load
@@ -92,7 +94,9 @@ if len(Models) > 0
               else
                 span.topcoat-muted Stopped
             td
-              if $model.State == "ready"
+              if $model.ID == ""
+                span.topcoat-muted Invalid model ID
+              else if $model.State == "ready"
                 button.topcoat-button[data-htmz-post="/api/models/unload/#{$model.ID}"][data-htmz-target="#models-list"][data-htmz-swap="none"][onclick="this.classList.add('btn-loading'); this.disabled=true; setTimeout(() => window.refreshModels(), 500)"] Unload
               else if $model.State == "stopped"
                 button.topcoat-button.topcoat-button--cta[data-htmz-post="/api/models/load/#{$model.ID}"][data-htmz-target="#models-list"][data-htmz-swap="none"][onclick="this.classList.add('btn-loading'); this.disabled=true; setTimeout(() => window.refreshModels(), 500)"] Load
@@ -103,4 +107,3 @@ else
     p.topcoat-muted No models are configured yet.
 
 script[src="/ui/static/models.js"]
-
