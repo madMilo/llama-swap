@@ -6,7 +6,7 @@ Key points:
 
 - **GPU VRAM caps**: clamp the scheduler to 24GB per GPU.
 - **Host RAM cap**: limit the scheduler to 240GB system RAM for non-spill models.
-- **Initial usage hints**: for `glm-4.7-dual` and `deepseek-v3-dual`, set `initialCpuMB: 245760` (240GB) so the scheduler understands the large RAM needs from the start.
+- **Initial usage hints**: set `initialVramMB` to 95% of available VRAM (single GPU or dual GPU). For `glm-4.7-dual` and `deepseek-v3-dual`, also set `initialCpuMB: 245760` (240GB) so the scheduler understands the large RAM needs from the start.
 
 > Note: Replace `/models` with the path where your GGUF files live. The container binds it to `/models`.
 
@@ -29,6 +29,9 @@ models:
   # ---------------------------------------------------------
   glm-flash-q4-gpu0:
     name: "GLM-4.7 Flash Q4_K_XL"
+    fitPolicy: spill
+    initialVramMB: 23347
+    initialCpuMB: 0
     cmd: >
       docker run --rm --gpus "device=0"
         -e LLAMA_SET_ROWS=1
@@ -49,6 +52,9 @@ models:
 
   glm-flash-q8-gpu0:
     name: "GLM-4.7 Flash Q8_K_XL"
+    fitPolicy: spill
+    initialVramMB: 23347
+    initialCpuMB: 0
     cmd: >
       docker run --rm --gpus "device=0"
         -e LLAMA_SET_ROWS=1
@@ -72,6 +78,9 @@ models:
   # ---------------------------------------------------------
   qwen-30b-gpu1:
     name: "Qwen3 Coder 30B-A3B-Instruct Q4_K_XL"
+    fitPolicy: spill
+    initialVramMB: 23347
+    initialCpuMB: 0
     cmd: >
       docker run --rm --gpus "device=1"
         -e LLAMA_SET_ROWS=1
@@ -91,6 +100,9 @@ models:
 
   qwen-next-gpu1:
     name: "Qwen3-Coder Next MXFP4_MOE"
+    fitPolicy: spill
+    initialVramMB: 23347
+    initialCpuMB: 0
     cmd: >
       docker run --rm --gpus "device=1"
         -e LLAMA_SET_ROWS=1
@@ -114,6 +126,9 @@ models:
   glm-flash-q8-dual:
     name: "GLM-4.7 Flash Q8_K_XL"
     concurrencyLimit: 1
+    fitPolicy: spill
+    initialVramMB: 46759
+    initialCpuMB: 0
     cmd: >
       docker run --rm --gpus "device=0,1"
         -e LLAMA_SET_ROWS=1
@@ -135,6 +150,9 @@ models:
   qwen-next-dual:
     name: "Qwen3 Coder Next MXFP4_MOE"
     concurrencyLimit: 1
+    fitPolicy: spill
+    initialVramMB: 46759
+    initialCpuMB: 0
     cmd: >
       docker run --rm --gpus "device=0,1"
         -e LLAMA_SET_ROWS=1
@@ -155,6 +173,8 @@ models:
   glm-4.7-dual:
     name: "GLM-4.7 Q4_K_XL"
     concurrencyLimit: 1
+    fitPolicy: spill
+    initialVramMB: 46759
     initialCpuMB: 245760
     cmd: >
       docker run --rm --gpus "device=0,1"
@@ -176,6 +196,8 @@ models:
   deepseek-v3-dual:
     name: "DeepSeek v3.2"
     concurrencyLimit: 1
+    fitPolicy: spill
+    initialVramMB: 46759
     initialCpuMB: 245760
     cmd: >
       docker run --rm --gpus "device=0,1"
@@ -199,6 +221,7 @@ models:
 
 - `gpuVramCapsMB`: tells the scheduler each GPU has 24GB of VRAM, even if the driver reports more or you want to reserve headroom.
 - `hostRamCapMB`: prevents multiple heavy models from being scheduled together beyond the system RAM cap.
+- `initialVramMB`: seeds the scheduler with a VRAM estimate (95% of 24GB for single GPU models, 95% of 48GB for dual GPU models) before runtime measurements are available.
 - `initialCpuMB`: gives the scheduler an immediate RAM estimate for huge models (like GLM-4.7 and DeepSeek v3.2) before runtime measurements are available.
 
 If you need more headroom for other models, reduce `initialCpuMB` or increase `hostRamCapMB` to match your system.
